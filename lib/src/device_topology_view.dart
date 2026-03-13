@@ -81,6 +81,9 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   void didUpdateWidget(DeviceTopologyView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.size != oldWidget.size ||
+        widget.deviceType != oldWidget.deviceType ||
+        widget.format != oldWidget.format ||
+        widget.isConfig != oldWidget.isConfig ||
         !identical(widget.portDevices, oldWidget.portDevices) ||
         !identical(widget.portStatusMap, oldWidget.portStatusMap)) {
       _createStrategy();
@@ -254,11 +257,10 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   void _handleStackedPartChanged(int part) {
     setState(() {
       _stackedSwitchSelectedPart = part;
-      widget.onStackedSwitchPartChanged?.call(part);
-      // Recreate strategy with the new part and re-initialize layout
       _createStrategy();
       _initializeLayout();
     });
+    widget.onStackedSwitchPartChanged?.call(part);
   }
 
   void _handlePortTap(int portNum) {
@@ -273,14 +275,14 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         if (widget.format is SwitchDeviceFormat) {
           final switchFormat = widget.format as SwitchDeviceFormat;
           if (switchFormat.isStacked) {
-            final int targetPart = portNum <= 24 ? 1 : 2;
+            final int halfPorts = switchFormat.totalPortsNum ~/ 2;
+            final int targetPart = portNum <= halfPorts ? 1 : 2;
             if (_stackedSwitchSelectedPart != targetPart) {
               _stackedSwitchSelectedPart = targetPart;
-              widget.onStackedSwitchPartChanged?.call(targetPart);
               _createStrategy();
               _initializeLayout();
-              // _updateHighlightStates will be called below
             }
+            widget.onStackedSwitchPartChanged?.call(targetPart);
           }
         }
       }
