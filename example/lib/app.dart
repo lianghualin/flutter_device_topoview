@@ -104,25 +104,24 @@ class _AppState extends State<App> {
     });
   }
 
-  void _handleDeviceSelected(String name, String type, int? portNum) {
+  String _timestamp() {
     final now = DateTime.now();
-    final timestamp =
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+  }
+
+  void _handleDeviceSelected(String name, String type, int? portNum) {
     setState(() {
       _eventLog.add(
-        '[$timestamp] onDeviceSelected — name: $name, type: $type, port: $portNum',
+        '[${_timestamp()}] onDeviceSelected — name: $name, type: $type, port: $portNum',
       );
     });
   }
 
   void _handleStackedPartChanged(int part) {
-    final now = DateTime.now();
-    final timestamp =
-        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
     setState(() {
       _stackedPart = part;
       _eventLog.add(
-        '[$timestamp] onStackedSwitchPartChanged — part: $part',
+        '[${_timestamp()}] onStackedSwitchPartChanged — part: $part',
       );
     });
   }

@@ -83,7 +83,6 @@ final List<Scenario> allScenarios = [
       const PortDevice(portId: '28', deviceName: 'Unknown-1', portNumber: 28, deviceType: 'Unknown', deviceIp: '10.0.6.6', connectionStatus: 1),
     ],
     totalPorts: 48, // Must be 48 (format.totalPortsNum) so port status map covers all layout ports
-    isStacked: true,
   ),
   _switchScenario(
     label: 'Switch 48P (Stacked)',
@@ -101,7 +100,6 @@ final List<Scenario> allScenarios = [
       const PortDevice(portId: '45', deviceName: 'Host-3', portNumber: 45, deviceType: 'Host', deviceIp: '10.0.7.10', connectionStatus: 0),
     ],
     totalPorts: 48,
-    isStacked: true,
   ),
 ];
 
@@ -180,7 +178,6 @@ Scenario _switchScenario({
   required SwitchDeviceFormat format,
   required List<PortDevice> devices,
   required int totalPorts,
-  bool isStacked = false,
 }) {
   final portStatusMap = <String, PortStatus>{};
   for (int i = 1; i <= totalPorts; i++) {
