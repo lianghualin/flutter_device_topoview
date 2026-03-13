@@ -10,6 +10,8 @@ Single-page web app with a dropdown scenario selector, full-screen topology view
 
 **Tech Stack:** Flutter (web-only), depends on `device_topology_view` via path dependency (`../`).
 
+**Scaffolding:** Run `flutter create --template=app --platforms=web example` from the package root, then replace the generated boilerplate with the files listed below.
+
 ---
 
 ## Scenarios
@@ -49,7 +51,9 @@ Uses `SimpleDeviceFormat` via `DPUTemplate`. Port status map uses `slotA`/`slotB
 | 13 | Switch 30P (Stacked) | SwitchUD1U30PStacked | 6 devices | Smallest stacked |
 | 14 | Switch 48P (Stacked) | SwitchUD1U48PStacked | 10 devices | Full stacked |
 
-Switch scenarios use `SwitchDeviceFormat` presets from the package. Port status maps use numeric string keys (`"1"`, `"2"`, etc.). Device types vary across scenarios to demonstrate all 4 floating device types (Switch, Host/MMI, DPU, Unknown). Stacked scenarios demonstrate part selection (Part 1 / Part 2).
+Switch scenarios use `SwitchDeviceFormat` presets from the package. Port status maps use numeric string keys (`"1"`, `"2"`, etc.). The 7 selected presets (6P, 10P, 16P, 24P, 28P for single-tier; 30P, 48P for stacked) are representative samples chosen to show the min, mid, and max of each tier — the remaining presets (8P, 12P, 14P, etc.) follow the same pattern and can be exercised by swapping formats in code.
+
+`PortDevice.deviceType` is a plain `String` field (not an enum). Valid values: `'Switch'`, `'Host'`, `'MMI'`, `'DPU'`, `'Unknown'`. Sample data uses a mix of these across scenarios to demonstrate all 4 floating device widget types. Stacked scenarios demonstrate part selection (Part 1 / Part 2).
 
 ---
 
@@ -79,19 +83,19 @@ Panel width: ~300px fixed. Full height of the topology area.
 
 - **isConfig toggle** — `Switch` widget. Toggles `DeviceTopologyView.isConfig`. Default: `false`.
 - **Port status randomizer** — `ElevatedButton`. Randomizes all port statuses in the current scenario's `portStatusMap` to random up/down/unknown values.
-- **Device count slider** — `Slider` widget. Adjusts the number of devices in the current scenario. Range depends on device type and format (e.g., 0 to total ports for switch). Adding devices generates new `PortDevice` entries with sequential port numbers and random device types. Removing devices trims from the end of the list.
+- **Device count slider** — `Slider` widget. Adjusts the number of devices in the current scenario. Slider ranges per device type: Host 0–6, DPU 0–2 (one per slot), Switch 0–`totalPortsNum` (or `validPortsNum` if stacked). Adding devices generates new `PortDevice` entries with sequential port numbers and randomly assigned `deviceType` strings from `['Switch', 'Host', 'MMI', 'DPU', 'Unknown']`. Removing devices trims from the end of the list.
 - **Device status toggle** — List of device names with `Switch` widgets to flip `deviceStatus` between `true` (normal/green) and `false` (abnormal/red).
 - **Reset button** — `OutlinedButton`. Restores the current scenario to its original sample data (devices, port statuses, isConfig).
 
 ### Switch-Specific Controls (visible only for switch_ scenarios)
 
-- **Stacked part selector** — `SegmentedButton` with Part 1 / Part 2. Only visible when the current scenario uses a stacked `SwitchDeviceFormat`. Sets `initialStackedSwitchPart`.
+- **Stacked part selector** — `SegmentedButton` with Part 1 / Part 2. Only visible when the current scenario uses a stacked `SwitchDeviceFormat`. This control works by forcing a widget rebuild with a new `Key` and updated `initialStackedSwitchPart`, since `initialStackedSwitchPart` is an init-only parameter (the widget manages its own internal stacked state). The app also listens to `onStackedSwitchPartChanged` to keep `_stackedPart` in sync with the widget's internal state.
 
 ### Event Log (bottom section)
 
 - Scrollable list of callback events with timestamps.
-- Captures: `onDeviceSelected(deviceName, deviceType, portNum)` and `onStackedSwitchPartChanged(part)`.
-- Each entry shows: `[HH:MM:SS] eventName — details`.
+- Captures: `onDeviceSelected(String deviceName, String deviceType, int? portNum)` and `onStackedSwitchPartChanged(int part)`.
+- Each entry shows: `[HH:MM:SS] onDeviceSelected — name: X, type: Y, port: Z` or `[HH:MM:SS] onStackedSwitchPartChanged — part: N`.
 - **Clear button** at the top of the log section.
 
 ---
@@ -114,7 +118,7 @@ Simple `StatefulWidget` in `app.dart`. State variables:
 - `_portStatusMap` (Map<String, PortStatus>) — mutable copy of current port statuses
 - `_isConfig` (bool) — config mode toggle
 - `_showPanel` (bool) — overlay visibility
-- `_stackedPart` (int?) — stacked switch part selection
+- `_stackedPart` (int) — stacked switch part selection (default `1` for stacked scenarios, `0` for non-stacked; synced via `onStackedSwitchPartChanged` callback)
 - `_eventLog` (List<String>) — callback log entries
 
 ---
@@ -148,13 +152,13 @@ example/
 - **sample_data.dart** — `final List<Scenario> allScenarios` with all 14 entries. Each constructs its `PortDevice` list and `portStatusMap` inline. This is the single source of truth for default data.
 - **control_panel.dart** — `StatelessWidget`. Receives current state via constructor params, emits changes via callbacks (onIsConfigChanged, onRandomize, onDeviceCountChanged, onDeviceStatusChanged, onReset, onStackedPartChanged). Renders controls in a scrollable column.
 - **event_log.dart** — `StatelessWidget`. Receives `List<String>` entries and `onClear` callback. Renders a scrollable list with monospace text.
-- **randomizer.dart** — Pure functions: `randomizePortStatuses(Map)`, `generateDevices(int count, DeviceType)`. No state.
+- **randomizer.dart** — Pure functions: `randomizePortStatuses(Map<String, PortStatus>)` returns a new map with random statuses, and `generateDevices(int count)` which creates `PortDevice` entries with sequential port numbers and randomly assigned `deviceType` strings from the pool `['Switch', 'Host', 'MMI', 'DPU', 'Unknown']` (note: `'MMI'` renders as a Host widget but is included for completeness). The `switchFormatForPortCount()` helper from the package is not used here — format is fixed per scenario and does not change when devices are added/removed. No state.
 
 ---
 
 ## Visual Design
 
-- Material 3 theme with dark color scheme (matches the topology's white background for contrast)
+- Material 3 light theme. The topology canvas is white (`Colors.white` hardcoded in `DeviceTopologyView`), so a light theme keeps the chrome consistent. AppBar uses a subtle colored surface for visual separation.
 - AppBar: standard Material elevation, dropdown uses `DropdownButton`
 - Overlay: `AnimatedPositioned` or `SlideTransition` for slide-in animation. Background: semi-transparent black (`Colors.black26`). Panel: `Material` with elevation, white/light surface.
 - Control sections separated by `Divider` widgets with section headers
