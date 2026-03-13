@@ -160,14 +160,8 @@ Scenario _dpuScenario() {
       ),
     ],
     portStatusMap: const {
-      'slotA_port1': PortStatus.up,
-      'slotA_port2': PortStatus.down,
-      'slotA_port3': PortStatus.up,
-      'slotA_port4': PortStatus.unknown,
-      'slotB_port1': PortStatus.up,
-      'slotB_port2': PortStatus.up,
-      'slotB_port3': PortStatus.down,
-      'slotB_port4': PortStatus.unknown,
+      'slotA': PortStatus.up,
+      'slotB': PortStatus.up,
     },
     centerLabel: 'DPU-Node',
   );

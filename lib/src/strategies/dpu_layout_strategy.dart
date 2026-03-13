@@ -5,7 +5,9 @@ import '../models/port_device.dart';
 import '../models/device_format.dart';
 import '../models/port_status.dart';
 import '../models/port.dart';
+import '../models/connection_line.dart';
 import '../widgets/center_device_widget.dart';
+import '../widgets/floating_devices/dev_float.dart';
 import 'device_layout_strategy.dart';
 import 'slot_based_layout_strategy.dart';
 
@@ -195,6 +197,197 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
       baselineDevices: baselinePositioned,
       exploreDevices: explorePositioned,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // generateConnections  -- DPU slot-based matching
+  // ---------------------------------------------------------------------------
+  //
+  // DPU has a different connection model from host:
+  //   - Host: 1 device per port, portId directly matches port label
+  //   - DPU:  1 device per slot, multiple ports per slot
+  //           device portId is 'slotA'/'slotB', port labels are 'slotA_port1', etc.
+  //
+  // We group ports by slot prefix and connect each device to the center
+  // of its slot's port group.
+
+  @override
+  List<ConnectionLine> generateConnections(
+    List<Port> ports,
+    List<DevFloat> devices,
+    List<PortDevice> portDevices,
+  ) {
+    // Group ports by slot prefix
+    final Map<String, List<Port>> slotPorts = {};
+    for (final port in ports) {
+      final label = port.label ?? '';
+      if (label.startsWith('slotA')) {
+        slotPorts.putIfAbsent('slotA', () => []).add(port);
+      } else if (label.startsWith('slotB')) {
+        slotPorts.putIfAbsent('slotB', () => []).add(port);
+      }
+    }
+
+    // Map devices by portId and label
+    final Map<String, DevFloat> deviceMap = {};
+    for (final device in devices) {
+      if (device.portId.isNotEmpty) {
+        deviceMap[device.portId] = device;
+      }
+      deviceMap[device.label] = device;
+    }
+
+    final List<ConnectionLine> connections = [];
+
+    for (final relationship in portDevices) {
+      if (relationship.deviceName.isEmpty &&
+          (relationship.deviceIp == null || relationship.deviceIp!.isEmpty)) {
+        continue;
+      }
+
+      // Find the port group for this device's slot
+      final List<Port>? portGroup = slotPorts[relationship.portId];
+      if (portGroup == null || portGroup.isEmpty) continue;
+
+      // Use the center of the port group as the source point
+      double avgX = 0, avgY = 0;
+      for (final port in portGroup) {
+        avgX += port.position.dx + port.width / 2;
+        avgY += port.position.dy + port.height / 2;
+      }
+      avgX /= portGroup.length;
+      avgY /= portGroup.length;
+      final Offset sourceOffset = Offset(avgX, avgY);
+
+      // Find the device
+      final String deviceLabel = relationship.deviceName.isNotEmpty
+          ? relationship.deviceName
+          : (relationship.deviceIp ?? '');
+      final DevFloat? device =
+          deviceMap[relationship.portId] ?? deviceMap[deviceLabel];
+
+      if (device != null) {
+        final Offset targetOffset = Offset(
+          device.position.dx,
+          device.position.dy - device.size * 0.2,
+        );
+
+        // Determine connection status
+        final bool hasExplore = (relationship.exploreDevName != null &&
+                relationship.exploreDevName!.isNotEmpty) ||
+            (relationship.exploreDevIp != null &&
+                relationship.exploreDevIp!.isNotEmpty);
+
+        final bool isSame =
+            relationship.deviceName == relationship.exploreDevName &&
+                relationship.deviceIp == relationship.exploreDevIp;
+
+        int status;
+        if (!hasExplore) {
+          status = 0; // baseline only -> dashed
+        } else if (isSame) {
+          status = 1; // matched -> green solid
+        } else {
+          status = 0; // differ -> dashed
+        }
+
+        connections.add(ConnectionLine(
+          sourceOffset: sourceOffset,
+          targetOffset: targetOffset,
+          status: status,
+          slotId: relationship.portId,
+        ));
+      }
+    }
+
+    return connections;
+  }
+
+  // ---------------------------------------------------------------------------
+  // generateExploreConnections  -- DPU slot-based matching
+  // ---------------------------------------------------------------------------
+
+  @override
+  List<ConnectionLine> generateExploreConnections(
+    List<Port> ports,
+    List<DevFloat> devices,
+    List<PortDevice> portDevices,
+  ) {
+    // Group ports by slot prefix
+    final Map<String, List<Port>> slotPorts = {};
+    for (final port in ports) {
+      final label = port.label ?? '';
+      if (label.startsWith('slotA')) {
+        slotPorts.putIfAbsent('slotA', () => []).add(port);
+      } else if (label.startsWith('slotB')) {
+        slotPorts.putIfAbsent('slotB', () => []).add(port);
+      }
+    }
+
+    // Map explore devices by portId and label
+    final Map<String, DevFloat> deviceMap = {};
+    for (final device in devices) {
+      if (device.portId.isNotEmpty) {
+        deviceMap[device.portId] = device;
+      }
+      deviceMap[device.label] = device;
+    }
+
+    final List<ConnectionLine> connections = [];
+
+    for (final relationship in portDevices) {
+      // Only process relationships with explore data
+      if ((relationship.exploreDevName == null ||
+              relationship.exploreDevName!.isEmpty) &&
+          (relationship.exploreDevIp == null ||
+              relationship.exploreDevIp!.isEmpty)) {
+        continue;
+      }
+
+      // Skip if baseline == explore
+      if (relationship.deviceName == relationship.exploreDevName &&
+          relationship.deviceIp == relationship.exploreDevIp) {
+        continue;
+      }
+
+      // Find the port group for this device's slot
+      final List<Port>? portGroup = slotPorts[relationship.portId];
+      if (portGroup == null || portGroup.isEmpty) continue;
+
+      // Use the center of the port group as the source point
+      double avgX = 0, avgY = 0;
+      for (final port in portGroup) {
+        avgX += port.position.dx + port.width / 2;
+        avgY += port.position.dy + port.height / 2;
+      }
+      avgX /= portGroup.length;
+      avgY /= portGroup.length;
+      final Offset sourceOffset = Offset(avgX, avgY);
+
+      // Find the device
+      final String deviceLabel = (relationship.exploreDevName != null &&
+              relationship.exploreDevName!.isNotEmpty)
+          ? relationship.exploreDevName!
+          : (relationship.exploreDevIp ?? '');
+      final DevFloat? device =
+          deviceMap[relationship.portId] ?? deviceMap[deviceLabel];
+
+      if (device != null) {
+        final Offset targetOffset = Offset(
+          device.position.dx,
+          device.position.dy - device.size * 0.2,
+        );
+
+        connections.add(ConnectionLine(
+          sourceOffset: sourceOffset,
+          targetOffset: targetOffset,
+          status: -1, // explore connections are always red
+          slotId: relationship.portId,
+        ));
+      }
+    }
+
+    return connections;
   }
 
   // ---------------------------------------------------------------------------
