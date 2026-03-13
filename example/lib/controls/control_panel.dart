@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:device_topology_view/device_topology_view.dart';
 
+import '../utils/app_logger.dart';
 import 'event_log.dart';
 
 class ControlPanel extends StatelessWidget {
@@ -62,10 +63,25 @@ class ControlPanel extends StatelessWidget {
                 children: [
                   Text('Controls',
                       style: Theme.of(context).textTheme.titleMedium),
-                  OutlinedButton.icon(
-                    onPressed: onReset,
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('Reset'),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: AppLogger.printSummary,
+                        icon: const Icon(Icons.bug_report, size: 18),
+                        tooltip: 'Print error summary to CLI',
+                        style: IconButton.styleFrom(
+                          foregroundColor: AppLogger.errors.isNotEmpty
+                              ? Colors.red
+                              : null,
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: onReset,
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Reset'),
+                      ),
+                    ],
                   ),
                 ],
               ),

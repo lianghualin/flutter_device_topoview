@@ -24,7 +24,7 @@ class UnknownDevFloat extends DevFloat {
     Function({int? deviceToKeepHighlighted})? onClearPortHighlight,
     DeviceSelectedCallback? onDeviceTapped,
   }) {
-    String uniqueKeyString = '${deviceId}_${deviceType}_$portstatus';
+    String uniqueKeyString = '${portId}_${label}_${deviceType}_$portstatus';
 
     return UnknownDevFloatWidget(
       key: ValueKey(uniqueKeyString),

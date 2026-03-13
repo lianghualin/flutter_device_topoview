@@ -24,7 +24,7 @@ class SwitchDevFloat extends DevFloat {
     Function({int? deviceToKeepHighlighted})? onClearPortHighlight,
     DeviceSelectedCallback? onDeviceTapped,
   }) {
-    String uniqueKeyString = '${deviceId}_${deviceType}_$portstatus';
+    String uniqueKeyString = '${portId}_${label}_${deviceType}_$portstatus';
 
     return SwitchDevFloatWidget(
       key: ValueKey(uniqueKeyString),
