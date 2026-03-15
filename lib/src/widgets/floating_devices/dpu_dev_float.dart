@@ -87,21 +87,24 @@ class _DpuDevFloatWidgetState extends DevFloatWidgetState<DpuDevFloatWidget> {
         : const Color(0xFFF53F3F).withValues(alpha: 0.3);
 
     return Container(
-      width: widget.size + 10,
-      height: widget.size + 10,
+      width: widget.size + 30,
+      height: widget.size + 30,
       decoration: BoxDecoration(
         color: backgroundColor,
         shape: BoxShape.circle,
       ),
-      child: Center(
-        child: PhysicalModel(
-          color: Colors.transparent,
-          elevation: 2 + animationValue * 5,
-          child: SvgPicture.asset(
-            'assets/images/dpu_float.svg',
-            package: 'device_topology_view',
-            width: widget.size,
-            height: widget.size,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Center(
+          child: PhysicalModel(
+            color: Colors.transparent,
+            elevation: 2 + animationValue * 5,
+            child: SvgPicture.asset(
+              'assets/images/dpu_float.svg',
+              package: 'device_topology_view',
+              width: widget.size,
+              height: widget.size,
+            ),
           ),
         ),
       ),

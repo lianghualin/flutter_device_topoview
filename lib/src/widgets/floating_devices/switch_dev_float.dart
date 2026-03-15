@@ -76,19 +76,22 @@ class _SwitchDevFloatWidgetState
         : const Color(0xFFF53F3F).withValues(alpha: 0.3);
 
     return Container(
-      width: widget.size + 10,
-      height: widget.size + 10,
+      width: widget.size + 30,
+      height: widget.size + 30,
       decoration: BoxDecoration(
         color: backgroundColor,
         shape: BoxShape.circle,
       ),
-      child: Center(
-        child: SizedBox(
-          width: widget.size,
-          height: widget.size,
-          child: SvgClip(
-            path: 'assets/images/switch_float.svg',
-            elevation: 2 + animationValue * 5,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Center(
+          child: SizedBox(
+            width: widget.size,
+            height: widget.size,
+            child: SvgClip(
+              path: 'assets/images/switch_float.svg',
+              elevation: 2 + animationValue * 5,
+            ),
           ),
         ),
       ),

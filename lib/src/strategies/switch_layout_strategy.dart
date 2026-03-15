@@ -140,7 +140,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
       }
 
       ports.add(Port(
-        position: Offset(portX, portY),
+        position: Offset(portX - portWidth / 2, portY - portHeight / 2),
         portNumber: i,
         width: portWidth,
         height: portHeight,

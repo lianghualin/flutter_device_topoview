@@ -94,7 +94,9 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   void _createStrategy() {
     switch (widget.deviceType) {
       case DeviceType.host:
-        _strategy = HostLayoutStrategy();
+        _strategy = HostLayoutStrategy(
+          deviceCount: widget.portDevices.length,
+        );
         break;
       case DeviceType.dpu:
         _strategy = DpuLayoutStrategy();
@@ -152,6 +154,87 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         _strategy.generateConnections(_ports, _baseDevices, widget.portDevices);
     _exploreConnections = _strategy.generateExploreConnections(
         _ports, _exploreDevices, widget.portDevices);
+
+    // Debug: print all element positions
+    debugPrint('=== LAYOUT DEBUG ===');
+    debugPrint('Viewport: ${_contentWidth.toStringAsFixed(0)} x ${_contentHeight.toStringAsFixed(0)}');
+    debugPrint('Center: pos=(${_centerLayout.position.dx.toStringAsFixed(0)}, ${_centerLayout.position.dy.toStringAsFixed(0)}) size=${_centerLayout.size.toStringAsFixed(0)}');
+    for (int i = 0; i < _ports.length; i++) {
+      final p = _ports[i];
+      final cx = (p.position.dx + p.width / 2).toStringAsFixed(0);
+      final cy = (p.position.dy + p.height / 2).toStringAsFixed(0);
+      debugPrint('Port[$i] "${p.label}": center=($cx, $cy)');
+    }
+    for (int i = 0; i < _devicePositions.baselineDevices.length; i++) {
+      final d = _devicePositions.baselineDevices[i];
+      final name = d.device.deviceName;
+      debugPrint('Baseline[$i] "$name": pos=(${d.position.dx.toStringAsFixed(0)}, ${d.position.dy.toStringAsFixed(0)}) size=${d.size.toStringAsFixed(0)}');
+      final visualTop = d.position.dy - (d.size + 30) / 2;
+      final visualLeft = d.position.dx - (d.size + 30) / 2;
+      final visualBottom = d.position.dy + (d.size + 30) / 2;
+      final visualRight = d.position.dx + (d.size + 30) / 2;
+      debugPrint('  visual bounds: (${visualLeft.toStringAsFixed(0)}, ${visualTop.toStringAsFixed(0)}) -> (${visualRight.toStringAsFixed(0)}, ${visualBottom.toStringAsFixed(0)})');
+      if (visualTop < 0 || visualLeft < 0 || visualBottom > _contentHeight || visualRight > _contentWidth) {
+        debugPrint('  ⚠️ OUT OF BOUNDS!');
+      }
+    }
+    for (int i = 0; i < _devicePositions.exploreDevices.length; i++) {
+      final d = _devicePositions.exploreDevices[i];
+      final name = d.device.exploreDevName ?? d.device.deviceName;
+      debugPrint('Explore[$i] "$name": pos=(${d.position.dx.toStringAsFixed(0)}, ${d.position.dy.toStringAsFixed(0)}) size=${d.size.toStringAsFixed(0)}');
+      final visualTop = d.position.dy - (d.size + 30) / 2;
+      final visualLeft = d.position.dx - (d.size + 30) / 2;
+      final visualBottom = d.position.dy + (d.size + 30) / 2;
+      final visualRight = d.position.dx + (d.size + 30) / 2;
+      debugPrint('  visual bounds: (${visualLeft.toStringAsFixed(0)}, ${visualTop.toStringAsFixed(0)}) -> (${visualRight.toStringAsFixed(0)}, ${visualBottom.toStringAsFixed(0)})');
+      if (visualTop < 0 || visualLeft < 0 || visualBottom > _contentHeight || visualRight > _contentWidth) {
+        debugPrint('  ⚠️ OUT OF BOUNDS!');
+      }
+    }
+    // Check for overlaps between all elements
+    final List<_DebugRect> allRects = [];
+    // Center device
+    allRects.add(_DebugRect(
+      'Center',
+      _centerLayout.position.dx,
+      _centerLayout.position.dy,
+      _centerLayout.position.dx + _centerLayout.size,
+      _centerLayout.position.dy + _centerLayout.size,
+    ));
+    // Baseline devices
+    for (int i = 0; i < _devicePositions.baselineDevices.length; i++) {
+      final d = _devicePositions.baselineDevices[i];
+      final half = (d.size + 30) / 2;
+      allRects.add(_DebugRect(
+        'Baseline "${d.device.deviceName}"',
+        d.position.dx - half, d.position.dy - half,
+        d.position.dx + half, d.position.dy + half,
+      ));
+    }
+    // Explore devices
+    for (int i = 0; i < _devicePositions.exploreDevices.length; i++) {
+      final d = _devicePositions.exploreDevices[i];
+      final half = (d.size + 30) / 2;
+      allRects.add(_DebugRect(
+        'Explore "${d.device.exploreDevName ?? d.device.deviceName}"',
+        d.position.dx - half, d.position.dy - half,
+        d.position.dx + half, d.position.dy + half,
+      ));
+    }
+    // Check all pairs
+    for (int i = 0; i < allRects.length; i++) {
+      for (int j = i + 1; j < allRects.length; j++) {
+        final a = allRects[i];
+        final b = allRects[j];
+        if (a.left < b.right && a.right > b.left &&
+            a.top < b.bottom && a.bottom > b.top) {
+          final overlapX = (a.right.clamp(b.left, b.right) - a.left.clamp(b.left, b.right)).abs();
+          final overlapY = (a.bottom.clamp(b.top, b.bottom) - a.top.clamp(b.top, b.bottom)).abs();
+          debugPrint('  🔴 OVERLAP: ${a.name} ↔ ${b.name} (${overlapX.toStringAsFixed(0)}x${overlapY.toStringAsFixed(0)}px)');
+        }
+      }
+    }
+    debugPrint('===================');
 
     // Apply highlight states for switch mode
     if (widget.deviceType == DeviceType.switch_) {
@@ -399,4 +482,10 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
       ),
     );
   }
+}
+
+class _DebugRect {
+  final String name;
+  final double left, top, right, bottom;
+  const _DebugRect(this.name, this.left, this.top, this.right, this.bottom);
 }

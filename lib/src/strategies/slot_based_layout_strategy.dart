@@ -124,7 +124,7 @@ abstract class SlotBasedLayoutStrategy extends DeviceLayoutStrategy {
         // Device connection point
         final Offset targetOffset = Offset(
           device.position.dx,
-          device.position.dy - device.size * 0.2,
+          device.position.dy,
         );
 
         // Determine status based on baseline/explore comparison
@@ -222,7 +222,7 @@ abstract class SlotBasedLayoutStrategy extends DeviceLayoutStrategy {
         // Device connection point
         final Offset targetOffset = Offset(
           device.position.dx,
-          device.position.dy - device.size * 0.2,
+          device.position.dy,
         );
 
         // Explore connections are always red (status = -1)

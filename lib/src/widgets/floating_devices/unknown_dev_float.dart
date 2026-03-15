@@ -72,15 +72,18 @@ class _UnknownDevFloatWidgetState
   @override
   Widget buildDeviceIcon(double animationValue) {
     return Container(
-      width: widget.size + 10,
-      height: widget.size + 10,
-      child: Center(
-        child: SizedBox(
-          width: widget.size,
-          height: widget.size,
-          child: SvgClip(
-            path: 'assets/images/unknown_float.svg',
-            elevation: 2 + animationValue * 5,
+      width: widget.size + 30,
+      height: widget.size + 30,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Center(
+          child: SizedBox(
+            width: widget.size,
+            height: widget.size,
+            child: SvgClip(
+              path: 'assets/images/unknown_float.svg',
+              elevation: 2 + animationValue * 5,
+            ),
           ),
         ),
       ),

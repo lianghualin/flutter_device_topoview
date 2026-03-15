@@ -269,7 +269,7 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
       if (device != null) {
         final Offset targetOffset = Offset(
           device.position.dx,
-          device.position.dy - device.size * 0.2,
+          device.position.dy,
         );
 
         // Determine connection status
@@ -375,7 +375,7 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
       if (device != null) {
         final Offset targetOffset = Offset(
           device.position.dx,
-          device.position.dy - device.size * 0.2,
+          device.position.dy,
         );
 
         connections.add(ConnectionLine(

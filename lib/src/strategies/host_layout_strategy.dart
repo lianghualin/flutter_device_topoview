@@ -12,9 +12,15 @@ import 'slot_based_layout_strategy.dart';
 /// Layout strategy for host topology views.
 ///
 /// Ports are arranged in a semi-ellipse above the center device.
-/// Floating switch devices are positioned using recursive binary
-/// space partitioning in two tiers (baseline at y=20%, explore at y=10%).
+/// Floating switch devices are positioned radially outward from their
+/// connected port, so each connection line fans out without crossing.
+/// Explore devices use the same radial direction but at greater distance
+/// with smaller size and reduced visual weight.
 class HostLayoutStrategy extends SlotBasedLayoutStrategy {
+  final int deviceCount;
+
+  HostLayoutStrategy({this.deviceCount = 1});
+
   // ---------------------------------------------------------------------------
   // calculateCenterLayout
   // ---------------------------------------------------------------------------
@@ -27,11 +33,18 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
 
     // Center size based on viewport dimensions
     final double minDimension = min(width, height);
-    final double centerSize = minDimension * 0.4;
+    final double centerSize = minDimension * 0.3;
 
-    // Position at horizontal center, 70% down
+    // Dynamic vertical position: fewer devices → higher, more → lower
+    // 1-2 devices: 55%, 3-4: 63%, 5-6: 72%
+    final double centerYFactor = deviceCount <= 2
+        ? 0.55
+        : deviceCount <= 4
+            ? 0.63
+            : 0.72;
+
     final double centerX = width / 2;
-    final double centerY = height * 0.7;
+    final double centerY = height * centerYFactor;
 
     // Top-left offset to center the widget
     final double positionDx = centerX - centerSize / 2;
@@ -63,7 +76,7 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
       centerPoint,
       center.size,
       numPorts,
-      radiusFactor: 0.8,
+      radiusFactor: 1.2,
       isUpward: true,
     );
 
@@ -97,7 +110,7 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
   }
 
   // ---------------------------------------------------------------------------
-  // calculateDevicePositions  -- recursive binary space partitioning
+  // calculateDevicePositions  -- radial fan positioning
   // ---------------------------------------------------------------------------
 
   @override
@@ -107,53 +120,134 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
     List<PortDevice> devices,
     List<Port> ports,
   ) {
-    final double contentWidth = viewportSize.width;
-    final double contentHeight = viewportSize.height;
-    final double minDimension = min(contentWidth, contentHeight);
-    final double deviceSize = minDimension * 0.15;
-    final double margin = contentWidth * 0.05;
+    final double minDimension = min(viewportSize.width, viewportSize.height);
+
+    // Auto-fit: scale device size based on device count
+    // Fewer devices → larger, more devices → smaller
+    final double deviceSizeFactor = deviceCount <= 1
+        ? 0.12
+        : deviceCount <= 2
+            ? 0.10
+            : deviceCount <= 4
+                ? 0.08
+                : 0.065;
+    final double deviceSize = minDimension * deviceSizeFactor;
+
+    // Host center point
+    final double hostCenterX = center.position.dx + center.size / 2;
+    final double hostCenterY = center.position.dy + center.size / 2;
+    final Offset hostCenter = Offset(hostCenterX, hostCenterY);
+
+    // Build port lookup: portId -> Port
+    final Map<String, Port> portMap = {};
+    for (final port in ports) {
+      if (port.label != null) {
+        portMap[port.label!] = port;
+      }
+    }
+
+    // Auto-fit radial distance: fewer devices → longer reach
+    final double baseDistFactor = deviceCount <= 2 ? 0.30 : 0.24;
+    final double baselineDistance = minDimension * baseDistFactor;
+
+    // Margin to keep devices within viewport bounds
+    final double visualPadding = (deviceSize + 30) / 2 + 10;
 
     // ---- Baseline devices ----
-    // Filter out devices with empty baseline info
     final List<PortDevice> validDevices = devices
         .where((d) =>
             d.deviceName.isNotEmpty ||
             (d.deviceIp != null && d.deviceIp!.isNotEmpty))
         .toList();
 
-    final double baselineY = contentHeight * 0.2;
     final List<PositionedDevice> baselinePositioned = [];
-    _positionDevicesRecursively(
-      validDevices,
-      margin,
-      contentWidth - margin,
-      baselineY,
-      deviceSize,
-      0, // no x offset for baseline
-      baselinePositioned,
-    );
+    for (final device in validDevices) {
+      final Port? port = portMap[device.portId];
+      if (port == null) continue;
 
-    // ---- Explore devices ----
-    // Only devices with explore data that differ from baseline
+      Offset devicePosition = _radialPosition(
+        hostCenter, port, baselineDistance,
+      );
+      devicePosition = _clampToViewport(
+        devicePosition, viewportSize, visualPadding,
+      );
+
+      baselinePositioned.add(PositionedDevice(
+        position: devicePosition,
+        size: deviceSize,
+        device: device,
+      ));
+    }
+
+    // ---- Explore devices (satellite positioning) ----
     final List<PortDevice> exploreDevices = devices
         .where((d) =>
             ((d.exploreDevName != null && d.exploreDevName!.isNotEmpty) ||
                 (d.exploreDevIp != null && d.exploreDevIp!.isNotEmpty)) &&
-            !(d.deviceName == d.exploreDevName && d.deviceIp == d.exploreDevIp))
+            !(d.deviceName == d.exploreDevName &&
+                d.deviceIp == d.exploreDevIp))
         .toList();
 
-    final double exploreY = contentHeight * 0.1;
-    final double xOffset = deviceSize * 0.7;
+    final double exploreDeviceSize = deviceSize * 0.7;
+    final double exploreVisualPadding = (exploreDeviceSize + 30) / 2 + 10;
     final List<PositionedDevice> explorePositioned = [];
-    _positionDevicesRecursively(
-      exploreDevices,
-      margin,
-      contentWidth - margin,
-      exploreY,
-      deviceSize,
-      xOffset,
-      explorePositioned,
-    );
+
+    for (final device in exploreDevices) {
+      // Find matching baseline device
+      PositionedDevice? matchingBaseline;
+      for (final b in baselinePositioned) {
+        if (b.device.portId == device.portId) {
+          matchingBaseline = b;
+          break;
+        }
+      }
+
+      if (matchingBaseline == null) {
+        // No baseline match — position radially from port
+        final Port? port = portMap[device.portId];
+        if (port == null) continue;
+        Offset pos = _radialPosition(hostCenter, port, baselineDistance * 1.4);
+        pos = _clampToViewport(pos, viewportSize, exploreVisualPadding);
+        explorePositioned.add(PositionedDevice(
+          position: pos, size: exploreDeviceSize, device: device,
+        ));
+        continue;
+      }
+
+      // Satellite offset: place on the outer side of baseline, away from center
+      final double separation =
+          (deviceSize + 30) / 2 + (exploreDeviceSize + 30) / 2 + 8;
+      final double dx = matchingBaseline.position.dx - hostCenter.dx;
+      final double dy = matchingBaseline.position.dy - hostCenter.dy;
+
+      // Offset along the dominant axis to guarantee no rectangular overlap
+      Offset satellitePos;
+      if (dx.abs() > dy.abs()) {
+        // Mostly horizontal: push satellite further along X (same side)
+        satellitePos = Offset(
+          matchingBaseline.position.dx + (dx >= 0 ? separation : -separation),
+          matchingBaseline.position.dy - separation * 0.25,
+        );
+      } else {
+        // Mostly vertical (top): push satellite sideways
+        // Left of center → go left, right of center → go right,
+        // at center → go right
+        final double sideX = dx >= 0 ? separation : -separation;
+        satellitePos = Offset(
+          matchingBaseline.position.dx + sideX,
+          matchingBaseline.position.dy - separation * 0.15,
+        );
+      }
+
+      satellitePos = _clampToViewport(
+          satellitePos, viewportSize, exploreVisualPadding);
+
+      explorePositioned.add(PositionedDevice(
+        position: satellitePos,
+        size: exploreDeviceSize,
+        device: device,
+      ));
+    }
 
     return DevicePositions(
       baselineDevices: baselinePositioned,
@@ -172,7 +266,7 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
     int numPorts, {
     double? radiusFactor,
     bool isUpward = true,
-    double ellipseRatio = 1.5,
+    double ellipseRatio = 1.2,
   }) {
     final List<Offset> positions = [];
     if (numPorts <= 0) return positions;
@@ -189,9 +283,12 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
       return positions;
     }
 
-    // Multiple ports distributed along semi-ellipse
-    final double startAngle = isUpward ? 0 : pi;
-    final double endAngle = isUpward ? pi : 2 * pi;
+    // Multiple ports distributed along an arc.
+    // Inset the angles so ports always have an upward component
+    // (avoids pure horizontal placement with 2 ports).
+    const double anglePadding = pi / 6;
+    final double startAngle = isUpward ? anglePadding : pi + anglePadding;
+    final double endAngle = isUpward ? pi - anglePadding : 2 * pi - anglePadding;
     final double totalAngle = endAngle - startAngle;
     final double angleStep =
         numPorts > 1 ? totalAngle / (numPorts - 1) : 0;
@@ -207,85 +304,31 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
     return positions;
   }
 
-  /// Recursive binary space partitioning for device positioning.
-  void _positionDevicesRecursively(
-    List<PortDevice> devicesToPosition,
-    double startX,
-    double endX,
-    double yPosition,
-    double deviceSize,
-    double xOffset,
-    List<PositionedDevice> result,
-  ) {
-    final int count = devicesToPosition.length;
+  /// Clamp a position to stay within the viewport with a margin.
+  Offset _clampToViewport(Offset position, Size viewport, double margin) {
+    return Offset(
+      position.dx.clamp(margin, viewport.width - margin),
+      position.dy.clamp(margin, viewport.height - margin),
+    );
+  }
 
-    if (count == 0) {
-      return;
-    } else if (count == 1) {
-      // Base case: single device at center of range
-      final double centerX = (startX + endX) / 2 + xOffset;
-      result.add(PositionedDevice(
-        position: Offset(centerX, yPosition),
-        size: deviceSize,
-        device: devicesToPosition[0],
-      ));
-    } else if (count % 2 == 0) {
-      // Even: split in half
-      final int midIndex = count ~/ 2;
-      final double midPoint = (startX + endX) / 2;
+  /// Position a device radially outward from the host center, along the
+  /// same direction as its connected [port].
+  Offset _radialPosition(Offset hostCenter, Port port, double distance) {
+    final Offset portCenter = Offset(
+      port.position.dx + port.width / 2,
+      port.position.dy + port.height / 2,
+    );
 
-      _positionDevicesRecursively(
-        devicesToPosition.sublist(0, midIndex),
-        startX,
-        midPoint,
-        yPosition,
-        deviceSize,
-        xOffset,
-        result,
-      );
-      _positionDevicesRecursively(
-        devicesToPosition.sublist(midIndex),
-        midPoint,
-        endX,
-        yPosition,
-        deviceSize,
-        xOffset,
-        result,
-      );
-    } else {
-      // Odd: center device + split remainder
-      final int midIndex = count ~/ 2;
-      final double midPoint = (startX + endX) / 2;
+    final Offset direction = portCenter - hostCenter;
+    final double dist = direction.distance;
 
-      result.add(PositionedDevice(
-        position: Offset(midPoint + xOffset, yPosition),
-        size: deviceSize,
-        device: devicesToPosition[midIndex],
-      ));
-
-      if (midIndex > 0) {
-        _positionDevicesRecursively(
-          devicesToPosition.sublist(0, midIndex),
-          startX,
-          midPoint - deviceSize,
-          yPosition,
-          deviceSize,
-          xOffset,
-          result,
-        );
-      }
-      if (midIndex < count - 1) {
-        _positionDevicesRecursively(
-          devicesToPosition.sublist(midIndex + 1),
-          midPoint + deviceSize,
-          endX,
-          yPosition,
-          deviceSize,
-          xOffset,
-          result,
-        );
-      }
+    if (dist > 0) {
+      final Offset normalizedDir = direction / dist;
+      return portCenter + normalizedDir * distance;
     }
+    // Fallback: place directly above if port is at center
+    return Offset(portCenter.dx, portCenter.dy - distance);
   }
 
   /// Convert PortStatus enum to bool? for Port.isUp.

@@ -113,15 +113,15 @@ Scenario _hostScenario(int deviceCount) {
         ? PortStatus.up
         : (i % 3 == 1 ? PortStatus.down : PortStatus.unknown);
 
-    final bool hasExplore = i >= 1 && i < 3;
+    // Every port gets both baseline and explore devices
     devices.add(PortDevice(
       portId: portId,
       deviceName: 'Switch-${i + 1}',
       deviceType: 'Switch',
       deviceIp: '10.0.0.${i + 1}',
-      exploreDevName: hasExplore ? 'Probe-Switch-${i + 1}' : null,
-      exploreDevIp: hasExplore ? '10.0.99.${i + 1}' : null,
-      connectionStatus: hasExplore ? 0 : 1,
+      exploreDevName: 'Probe-Switch-${i + 1}',
+      exploreDevIp: '10.0.99.${i + 1}',
+      connectionStatus: 0,
       deviceStatus: i != 2,
     ));
   }

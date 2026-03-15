@@ -33,6 +33,17 @@ class ConnectionLine {
       final midY = (sourceOffset.dy + targetOffset.dy) / 2;
       final offset = (portNumber! % 2 == 0 ? 10.0 : -10.0) * animationValue;
       path.quadraticBezierTo(midX + offset, midY, targetOffset.dx, targetOffset.dy);
+    } else if (status == -1) {
+      // Explore lines: curve perpendicular to the straight path
+      final midX = (sourceOffset.dx + targetOffset.dx) / 2;
+      final midY = (sourceOffset.dy + targetOffset.dy) / 2;
+      final dx = targetOffset.dx - sourceOffset.dx;
+      final dy = targetOffset.dy - sourceOffset.dy;
+      // Perpendicular offset (15% of line length)
+      final perpX = -dy * 0.15;
+      final perpY = dx * 0.15;
+      path.quadraticBezierTo(
+          midX + perpX, midY + perpY, targetOffset.dx, targetOffset.dy);
     } else {
       path.lineTo(targetOffset.dx, targetOffset.dy);
     }

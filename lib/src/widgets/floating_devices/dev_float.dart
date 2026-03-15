@@ -161,9 +161,12 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
         builder: (context, child) {
           final double hoverOffset = _controller.value * 2;
 
+          // Circle is size+30 to contain both icon and label
+          final double visualSize = widget.size + 30;
+
           return Positioned(
-            left: widget.left - (widget.size / 2),
-            top: widget.top - (widget.size / 2) - hoverOffset,
+            left: widget.left - visualSize / 2,
+            top: widget.top - visualSize / 2 - hoverOffset,
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
               onEnter: (_) {
@@ -192,33 +195,24 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
                     }
                   }
                 },
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
-                      width: widget.size,
-                      height: widget.size + 10,
-                      child: Stack(
-                        alignment: Alignment.topCenter,
-                        children: [
-                          buildDeviceIcon(_controller.value),
-                        ],
+                child: SizedBox(
+                  width: visualSize,
+                  height: visualSize,
+                  child: Stack(
+                    alignment: Alignment.topCenter,
+                    children: [
+                      buildDeviceIcon(_controller.value),
+                      Positioned(
+                        bottom: 4,
+                        left: 0,
+                        right: 0,
+                        child: Opacity(
+                          opacity: textOpacity,
+                          child: buildLabel(),
+                        ),
                       ),
-                    ),
-                    Transform.translate(
-                      offset: widget.deviceType == 'Switch'
-                          ? const Offset(0, -17)
-                          : widget.deviceType == 'Host'
-                              ? const Offset(0, -8)
-                              : widget.deviceType == 'DPU'
-                                  ? const Offset(0, 0)
-                                  : const Offset(0, -5),
-                      child: Opacity(
-                        opacity: textOpacity,
-                        child: buildLabel(),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

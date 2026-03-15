@@ -150,29 +150,34 @@ class _PortWidgetState extends State<PortWidget>
                   widget.onTap!(widget.port.portNumber!);
                 }
               },
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: widget.port.width,
-                    height: widget.port.height,
-                    child: svgWidget,
-                  ),
-                  // Show label only when port is valid and showLabel is true
-                  if (!widget.port.isInvalid && widget.port.showLabel)
-                    Text(
-                      widget.port.label ??
-                          (widget.port.portNumber != null
-                              ? '${widget.port.portNumber}'
-                              : ''),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
+              child: SizedBox(
+                width: widget.port.width,
+                height: widget.port.height,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: widget.port.width,
+                      height: widget.port.height,
+                      child: svgWidget,
                     ),
-                ],
+                    // Show label only when port is valid and showLabel is true
+                    if (!widget.port.isInvalid && widget.port.showLabel)
+                      Text(
+                        widget.port.label ??
+                            (widget.port.portNumber != null
+                                ? '${widget.port.portNumber}'
+                                : ''),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
