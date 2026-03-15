@@ -156,16 +156,19 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
     List<Port> ports,
   ) {
     final double contentWidth = viewportSize.width;
-    final double contentHeight = viewportSize.height;
-    final double centerX = contentWidth / 2;
-    final double minDimension = min(contentWidth, contentHeight);
+    final double minDimension = min(contentWidth, viewportSize.height);
 
-    // Device size: 15% of min dimension, clamped [60, 120]
-    double deviceSize = minDimension * 0.15;
-    deviceSize = deviceSize.clamp(60.0, 120.0);
+    // Device size: 10% of min dimension, clamped [50, 100]
+    double deviceSize = minDimension * 0.10;
+    deviceSize = deviceSize.clamp(50.0, 100.0);
 
-    // Horizontal spacing
-    final double horizontalSpacing = contentWidth * 0.25;
+    // DPU center X
+    final double dpuCenterX = center.position.dx + center.size / 2;
+
+    // Position devices ABOVE the DPU center
+    final double baselineY = center.position.dy - deviceSize * 0.8;
+    final double horizontalSpacing = contentWidth * 0.22;
+    final double visualPadding = (deviceSize + 30) / 2 + 10;
 
     // ---- Baseline devices ----
     final List<PortDevice> validDevices = devices
@@ -174,12 +177,24 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
             (d.deviceIp != null && d.deviceIp!.isNotEmpty))
         .toList();
 
-    final double baselineY = contentHeight * 0.2;
-    final List<PositionedDevice> baselinePositioned =
-        _positionBySlot(validDevices, centerX, horizontalSpacing,
-            baselineY, deviceSize, false);
+    final List<PositionedDevice> baselinePositioned = [];
+    for (final device in validDevices) {
+      final bool isSlotA = device.portId.contains('slotA');
+      final double x = isSlotA
+          ? dpuCenterX - horizontalSpacing
+          : dpuCenterX + horizontalSpacing;
 
-    // ---- Explore devices ----
+      Offset pos = Offset(x, baselineY);
+      pos = _clampToViewport(pos, viewportSize, visualPadding);
+
+      baselinePositioned.add(PositionedDevice(
+        position: pos,
+        size: deviceSize,
+        device: device,
+      ));
+    }
+
+    // ---- Explore devices (satellite positioning) ----
     final List<PortDevice> exploreDevices = devices
         .where((d) =>
             ((d.exploreDevName != null && d.exploreDevName!.isNotEmpty) ||
@@ -188,14 +203,52 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
                 d.deviceIp == d.exploreDevIp))
         .toList();
 
-    final double exploreY = contentHeight * 0.1;
-    final List<PositionedDevice> explorePositioned =
-        _positionBySlot(exploreDevices, centerX, horizontalSpacing,
-            exploreY, deviceSize, true);
+    final double exploreDeviceSize = deviceSize * 0.7;
+    final double exploreVisualPadding = (exploreDeviceSize + 30) / 2 + 10;
+    final List<PositionedDevice> explorePositioned = [];
+
+    for (final device in exploreDevices) {
+      // Find matching baseline
+      PositionedDevice? matchingBaseline;
+      for (final b in baselinePositioned) {
+        if (b.device.portId == device.portId) {
+          matchingBaseline = b;
+          break;
+        }
+      }
+
+      if (matchingBaseline == null) continue;
+
+      // Satellite offset: slotA → further left, slotB → further right
+      final double separation =
+          (deviceSize + 30) / 2 + (exploreDeviceSize + 30) / 2 + 8;
+      final bool isSlotA = device.portId.contains('slotA');
+
+      Offset satellitePos = Offset(
+        matchingBaseline.position.dx + (isSlotA ? -separation : separation),
+        matchingBaseline.position.dy - separation * 0.25,
+      );
+      satellitePos = _clampToViewport(
+          satellitePos, viewportSize, exploreVisualPadding);
+
+      explorePositioned.add(PositionedDevice(
+        position: satellitePos,
+        size: exploreDeviceSize,
+        device: device,
+      ));
+    }
 
     return DevicePositions(
       baselineDevices: baselinePositioned,
       exploreDevices: explorePositioned,
+    );
+  }
+
+  /// Clamp a position to stay within the viewport with a margin.
+  Offset _clampToViewport(Offset position, Size viewport, double margin) {
+    return Offset(
+      position.dx.clamp(margin, viewport.width - margin),
+      position.dy.clamp(margin, viewport.height - margin),
     );
   }
 
@@ -393,89 +446,6 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
-
-  /// Position devices by slot group (slotA -> left, slotB -> right).
-  List<PositionedDevice> _positionBySlot(
-    List<PortDevice> devices,
-    double centerX,
-    double horizontalSpacing,
-    double yPosition,
-    double deviceSize,
-    bool isExplore,
-  ) {
-    final List<PositionedDevice> result = [];
-
-    // Group by slot
-    final Map<String, List<PortDevice>> slotDevices = {
-      'slotA': [],
-      'slotB': [],
-    };
-    for (final device in devices) {
-      if (device.portId.contains('slotA')) {
-        slotDevices['slotA']!.add(device);
-      } else if (device.portId.contains('slotB')) {
-        slotDevices['slotB']!.add(device);
-      }
-    }
-
-    // slotA -> left side
-    if (slotDevices['slotA']!.isNotEmpty) {
-      final slotADevices = slotDevices['slotA']!;
-      if (slotADevices.length == 1) {
-        final double xPos = centerX - horizontalSpacing;
-        result.add(PositionedDevice(
-          position: Offset(xPos, yPosition),
-          size: deviceSize,
-          device: slotADevices[0],
-        ));
-      } else {
-        final double startX = centerX - horizontalSpacing * 1.5;
-        final double endX = centerX - horizontalSpacing * 0.5;
-        final double step = slotADevices.length > 1
-            ? (endX - startX) / (slotADevices.length - 1)
-            : 0;
-
-        for (int i = 0; i < slotADevices.length; i++) {
-          final double xPos = startX + i * step;
-          result.add(PositionedDevice(
-            position: Offset(xPos, yPosition),
-            size: deviceSize,
-            device: slotADevices[i],
-          ));
-        }
-      }
-    }
-
-    // slotB -> right side
-    if (slotDevices['slotB']!.isNotEmpty) {
-      final slotBDevices = slotDevices['slotB']!;
-      if (slotBDevices.length == 1) {
-        final double xPos = centerX + horizontalSpacing;
-        result.add(PositionedDevice(
-          position: Offset(xPos, yPosition),
-          size: deviceSize,
-          device: slotBDevices[0],
-        ));
-      } else {
-        final double startX = centerX + horizontalSpacing * 0.5;
-        final double endX = centerX + horizontalSpacing * 1.5;
-        final double step = slotBDevices.length > 1
-            ? (endX - startX) / (slotBDevices.length - 1)
-            : 0;
-
-        for (int i = 0; i < slotBDevices.length; i++) {
-          final double xPos = startX + i * step;
-          result.add(PositionedDevice(
-            position: Offset(xPos, yPosition),
-            size: deviceSize,
-            device: slotBDevices[i],
-          ));
-        }
-      }
-    }
-
-    return result;
-  }
 
   /// Convert PortStatus enum to bool? for Port.isUp.
   bool? _portStatusToBool(PortStatus status) {
