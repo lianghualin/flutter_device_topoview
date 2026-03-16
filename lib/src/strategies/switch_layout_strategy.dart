@@ -587,9 +587,10 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
 
   /// Check if current device set represents a stacked switch (48 ports).
   bool _isStacked(List<PortDevice> devices) {
-    // A stacked switch is indicated by having devices with port numbers > 24
+    // A stacked switch has devices with port numbers > 28
+    // (28-port switches have ports 1-28 and are NOT stacked)
     return devices.any(
-        (d) => d.portNumber != null && d.portNumber! > 24);
+        (d) => d.portNumber != null && d.portNumber! > 28);
   }
 
   /// Convert PortStatus enum to bool? for Port.isUp.
