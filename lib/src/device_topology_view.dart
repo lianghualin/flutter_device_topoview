@@ -68,6 +68,19 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   int _stackedSwitchSelectedPart = 0;
   int? _selectedPortNumber;
   int? _hoveredPortNumber;
+  bool _isHoveringSwitch = false;
+
+  /// Active port for spotlight dimming (switch only).
+  /// Returns -1 when hovering switch but no specific port (dim everything).
+  /// Returns port number when hovering a specific port (spotlight that port).
+  /// Returns null when not hovering switch (no dimming).
+  int? get _switchActivePort {
+    if (widget.deviceType != DeviceType.switch_) return null;
+    if (_selectedPortNumber != null) return _selectedPortNumber;
+    if (_hoveredPortNumber != null) return _hoveredPortNumber;
+    if (_isHoveringSwitch) return -1; // sentinel: dim everything
+    return null;
+  }
 
   @override
   void initState() {
@@ -390,6 +403,20 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
     });
   }
 
+  void _handleSwitchHover() {
+    setState(() {
+      _isHoveringSwitch = true;
+    });
+  }
+
+  void _handleSwitchHoverExit() {
+    setState(() {
+      _isHoveringSwitch = false;
+      _hoveredPortNumber = null;
+      _updateHighlightStates();
+    });
+  }
+
   void _handleDeviceSelected(int deviceId) {
     setState(() {
       // Toggle: if already selected, deselect; otherwise select
@@ -398,6 +425,16 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
       } else {
         _selectedDeviceId = deviceId;
       }
+      _updateHighlightStates();
+    });
+  }
+
+  void _handleTapBlank() {
+    setState(() {
+      _selectedPortNumber = null;
+      _hoveredPortNumber = null;
+      _selectedDeviceId = null;
+      _isHoveringSwitch = false;
       _updateHighlightStates();
     });
   }
@@ -422,6 +459,9 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
     return Container(
       color: Colors.white,
       child: GestureDetector(
+        onTap: _handleTapBlank,
+        behavior: HitTestBehavior.translucent,
+        child: GestureDetector(
         onPanStart: handlePanStart,
         onPanUpdate: (details) =>
             handlePanUpdate(details, _contentWidth, _contentHeight),
@@ -445,16 +485,29 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                     deviceType: widget.deviceType,
                     stackedSwitchPart: _stackedSwitchSelectedPart,
                     onStackedPartChanged: _handleStackedPartChanged,
+                    onSwitchHover: widget.deviceType == DeviceType.switch_
+                        ? _handleSwitchHover
+                        : null,
+                    onSwitchHoverExit: widget.deviceType == DeviceType.switch_
+                        ? _handleSwitchHoverExit
+                        : null,
                   ),
                   // Layer 2: Explore connections
-                  ConnectionsLayer(connections: _exploreConnections),
+                  ConnectionsLayer(
+                    connections: _exploreConnections,
+                    activePortNumber: _switchActivePort,
+                  ),
                   // Layer 3: Explore floating devices
                   DevLayer(
                     devices: _exploreDevices,
                     onExternalDeviceSelected: widget.onDeviceSelected,
+                    activePortNumber: _switchActivePort,
                   ),
                   // Layer 4: Baseline connections
-                  ConnectionsLayer(connections: _baseConnections),
+                  ConnectionsLayer(
+                    connections: _baseConnections,
+                    activePortNumber: _switchActivePort,
+                  ),
                   // Layer 5: Baseline floating devices
                   DevLayer(
                     devices: _baseDevices,
@@ -462,6 +515,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                     onDeviceSelected: _handleDeviceSelected,
                     onClearPortHighlight: _handleClearPortHighlight,
                     onExternalDeviceSelected: widget.onDeviceSelected,
+                    activePortNumber: _switchActivePort,
                   ),
                   // Layer 6: Ports
                   PortLayer(
@@ -482,6 +536,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
             ),
           ),
         ),
+      ),
       ),
     );
   }

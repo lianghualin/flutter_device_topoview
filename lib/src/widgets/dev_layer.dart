@@ -10,6 +10,7 @@ class DevLayer extends StatefulWidget {
   final int? selectedDeviceId;
   final Function(int)? onDeviceSelected;
   final DeviceSelectedCallback? onExternalDeviceSelected;
+  final int? activePortNumber;
 
   const DevLayer({
     super.key,
@@ -18,6 +19,7 @@ class DevLayer extends StatefulWidget {
     this.selectedDeviceId,
     this.onDeviceSelected,
     this.onExternalDeviceSelected,
+    this.activePortNumber,
   });
 
   @override
@@ -33,6 +35,7 @@ class _DevLayerState extends State<DevLayer> {
 
   @override
   Widget build(BuildContext context) {
+    final int? active = widget.activePortNumber;
     return Stack(
       children: [
         for (final device in widget.devices)
@@ -43,6 +46,9 @@ class _DevLayerState extends State<DevLayer> {
             onDeviceSelected: _handleDeviceSelected,
             onClearPortHighlight: widget.onClearPortHighlight,
             onDeviceTapped: widget.onExternalDeviceSelected,
+            dimOpacity: active != null && device.connectedPortNum != active
+                ? 0.15
+                : null,
           ),
       ],
     );

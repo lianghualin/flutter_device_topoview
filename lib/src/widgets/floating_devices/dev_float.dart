@@ -38,6 +38,7 @@ abstract class DevFloat {
     Function(int)? onDeviceSelected,
     Function({int? deviceToKeepHighlighted})? onClearPortHighlight,
     DeviceSelectedCallback? onDeviceTapped,
+    double? dimOpacity,
   });
 
   /// Unique device ID based on connected port number
@@ -59,6 +60,7 @@ abstract class DevFloatWidget extends StatefulWidget {
   final String deviceType;
   final bool deviceStatus;
   final DeviceSelectedCallback? onDeviceTappedExternally;
+  final double? dimOpacity;
 
   static bool showOutline = false;
 
@@ -77,6 +79,7 @@ abstract class DevFloatWidget extends StatefulWidget {
     required this.deviceType,
     required this.deviceStatus,
     this.onDeviceTappedExternally,
+    this.dimOpacity,
   });
 }
 
@@ -164,10 +167,7 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
           // Circle is size+30 to contain both icon and label
           final double visualSize = widget.size + 30;
 
-          return Positioned(
-            left: widget.left - visualSize / 2,
-            top: widget.top - visualSize / 2 - hoverOffset,
-            child: MouseRegion(
+          Widget content = MouseRegion(
               cursor: SystemMouseCursors.click,
               onEnter: (_) {
                 if (!(widget.isHighlighted || isSelected)) {
@@ -215,7 +215,16 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
                   ),
                 ),
               ),
-            ),
+            );
+
+          if (widget.dimOpacity != null) {
+            content = Opacity(opacity: widget.dimOpacity!, child: content);
+          }
+
+          return Positioned(
+            left: widget.left - visualSize / 2,
+            top: widget.top - visualSize / 2 - hoverOffset,
+            child: content,
           );
         });
   }

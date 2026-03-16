@@ -30,6 +30,8 @@ class CenterDeviceWidget extends StatefulWidget {
   /// For stacked switches: 0=none, 1=upper, 2=lower
   final int stackedSwitchPart;
   final Function(int)? onStackedPartChanged;
+  final VoidCallback? onSwitchHover;
+  final VoidCallback? onSwitchHoverExit;
 
   const CenterDeviceWidget({
     super.key,
@@ -39,6 +41,8 @@ class CenterDeviceWidget extends StatefulWidget {
     required this.deviceType,
     this.stackedSwitchPart = 0,
     this.onStackedPartChanged,
+    this.onSwitchHover,
+    this.onSwitchHoverExit,
   });
 
   @override
@@ -214,12 +218,16 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
     return Positioned(
       left: pos.dx + size * (1 - fmt.wSizeFactor),
       top: pos.dy + size * fmt.hSizeFactor,
-      child: SizedBox(
-        width: size * fmt.wSizeFactor,
-        height: size * fmt.hSizeFactor,
-        child: SvgClip(
-          path: fmt.imgPath,
-          elevation: 5,
+      child: MouseRegion(
+        onEnter: (_) => widget.onSwitchHover?.call(),
+        onExit: (_) => widget.onSwitchHoverExit?.call(),
+        child: SizedBox(
+          width: size * fmt.wSizeFactor,
+          height: size * fmt.hSizeFactor,
+          child: SvgClip(
+            path: fmt.imgPath,
+            elevation: 5,
+          ),
         ),
       ),
     );
@@ -250,7 +258,11 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
       lowerOpacity = 1.0;
     }
 
-    return Stack(
+    return MouseRegion(
+      onEnter: (_) => widget.onSwitchHover?.call(),
+      onExit: (_) => widget.onSwitchHoverExit?.call(),
+      hitTestBehavior: HitTestBehavior.translucent,
+      child: Stack(
       children: [
         // Upper switch (ports 1-24)
         Positioned(
@@ -307,6 +319,7 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
           ),
         ),
       ],
+    ),
     );
   }
 }
@@ -322,6 +335,8 @@ class CenterDeviceLayer extends StatelessWidget {
   final DeviceType deviceType;
   final int stackedSwitchPart;
   final Function(int)? onStackedPartChanged;
+  final VoidCallback? onSwitchHover;
+  final VoidCallback? onSwitchHoverExit;
 
   const CenterDeviceLayer({
     super.key,
@@ -331,6 +346,8 @@ class CenterDeviceLayer extends StatelessWidget {
     required this.deviceType,
     this.stackedSwitchPart = 0,
     this.onStackedPartChanged,
+    this.onSwitchHover,
+    this.onSwitchHoverExit,
   });
 
   @override
@@ -344,6 +361,8 @@ class CenterDeviceLayer extends StatelessWidget {
           deviceType: deviceType,
           stackedSwitchPart: stackedSwitchPart,
           onStackedPartChanged: onStackedPartChanged,
+          onSwitchHover: onSwitchHover,
+          onSwitchHoverExit: onSwitchHoverExit,
         ),
       ],
     );

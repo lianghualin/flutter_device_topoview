@@ -23,6 +23,7 @@ class SwitchDevFloat extends DevFloat {
     Function(int)? onDeviceSelected,
     Function({int? deviceToKeepHighlighted})? onClearPortHighlight,
     DeviceSelectedCallback? onDeviceTapped,
+    double? dimOpacity,
   }) {
     String uniqueKeyString = '${portId}_${label}_${deviceType}_$portstatus';
 
@@ -41,6 +42,7 @@ class SwitchDevFloat extends DevFloat {
       onDeviceSelected: onDeviceSelected,
       onClearPortHighlight: onClearPortHighlight,
       onDeviceTappedExternally: onDeviceTapped,
+      dimOpacity: dimOpacity,
     );
   }
 }
@@ -61,6 +63,7 @@ class SwitchDevFloatWidget extends DevFloatWidget {
     super.onDeviceSelected,
     super.onClearPortHighlight,
     super.onDeviceTappedExternally,
+    super.dimOpacity,
   });
 
   @override

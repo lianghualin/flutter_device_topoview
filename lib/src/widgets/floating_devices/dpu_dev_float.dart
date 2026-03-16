@@ -28,6 +28,7 @@ class DpuDevFloat extends DevFloat {
     Function(int)? onDeviceSelected,
     Function({int? deviceToKeepHighlighted})? onClearPortHighlight,
     DeviceSelectedCallback? onDeviceTapped,
+    double? dimOpacity,
   }) {
     String uniqueKeyString = '${portId}_${label}_${deviceType}_$portstatus';
 
@@ -48,6 +49,7 @@ class DpuDevFloat extends DevFloat {
       onDeviceTappedExternally: onDeviceTapped,
       totalPfs: totalPfs,
       usedPfs: usedPfs,
+      dimOpacity: dimOpacity,
     );
   }
 }
@@ -73,6 +75,7 @@ class DpuDevFloatWidget extends DevFloatWidget {
     super.onDeviceTappedExternally,
     required this.totalPfs,
     required this.usedPfs,
+    super.dimOpacity,
   });
 
   @override
