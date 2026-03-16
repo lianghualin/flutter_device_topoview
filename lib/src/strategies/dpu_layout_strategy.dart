@@ -431,11 +431,13 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
           device.position.dy,
         );
 
+        final bool isSlotA = relationship.portId.contains('slotA');
         connections.add(ConnectionLine(
           sourceOffset: sourceOffset,
           targetOffset: targetOffset,
           status: -1, // explore connections are always red
           slotId: relationship.portId,
+          curveDirection: isSlotA ? -1 : 1,
         ));
       }
     }

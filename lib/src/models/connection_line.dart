@@ -9,6 +9,7 @@ class ConnectionLine {
   final String? slotId;
   final int? portNumber;
   final bool isConfig;
+  final int curveDirection;
 
   const ConnectionLine({
     required this.sourceOffset,
@@ -18,6 +19,7 @@ class ConnectionLine {
     this.slotId,
     this.portNumber,
     this.isConfig = false,
+    this.curveDirection = 1,
   });
 
   void paint(Canvas canvas, {double animationValue = 0.0}) {
@@ -39,9 +41,9 @@ class ConnectionLine {
       final midY = (sourceOffset.dy + targetOffset.dy) / 2;
       final dx = targetOffset.dx - sourceOffset.dx;
       final dy = targetOffset.dy - sourceOffset.dy;
-      // Perpendicular offset (15% of line length)
-      final perpX = -dy * 0.15;
-      final perpY = dx * 0.15;
+      // Perpendicular offset (15% of line length), direction controllable
+      final perpX = -dy * 0.15 * curveDirection;
+      final perpY = dx * 0.15 * curveDirection;
       path.quadraticBezierTo(
           midX + perpX, midY + perpY, targetOffset.dx, targetOffset.dy);
     } else {

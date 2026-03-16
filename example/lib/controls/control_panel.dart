@@ -14,7 +14,12 @@ class ControlPanel extends StatelessWidget {
     required this.maxDevices,
     required this.onDeviceCountChanged,
     required this.portDevices,
-    required this.onDeviceStatusChanged,
+    required this.baselineConnected,
+    required this.exploreConnected,
+    required this.onBaselineToggled,
+    required this.onExploreToggled,
+    required this.onShowAllExplore,
+    required this.onHideAllExplore,
     required this.onReset,
     required this.eventLog,
     required this.onClearLog,
@@ -32,7 +37,12 @@ class ControlPanel extends StatelessWidget {
   final int maxDevices;
   final ValueChanged<int> onDeviceCountChanged;
   final List<PortDevice> portDevices;
-  final void Function(int index, bool status) onDeviceStatusChanged;
+  final Set<int> baselineConnected;
+  final Set<int> exploreConnected;
+  final void Function(int index, bool connected) onBaselineToggled;
+  final void Function(int index, bool connected) onExploreToggled;
+  final VoidCallback onShowAllExplore;
+  final VoidCallback onHideAllExplore;
   final VoidCallback onReset;
   final List<String> eventLog;
   final VoidCallback onClearLog;
@@ -136,7 +146,29 @@ class ControlPanel extends StatelessWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  _SectionHeader(title: 'Device Status'),
+                  _SectionHeader(title: 'Explore Devices'),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: onShowAllExplore,
+                          icon: const Icon(Icons.visibility, size: 16),
+                          label: const Text('Show All'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: onHideAllExplore,
+                          icon: const Icon(Icons.visibility_off, size: 16),
+                          label: const Text('Hide All'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _SectionHeader(title: 'Port Connections'),
                   if (portDevices.isEmpty)
                     const Padding(
                       padding: EdgeInsets.all(8),
@@ -145,12 +177,57 @@ class ControlPanel extends StatelessWidget {
                     ),
                   ...List.generate(portDevices.length, (i) {
                     final dev = portDevices[i];
-                    return SwitchListTile(
-                      title: Text(dev.deviceName, overflow: TextOverflow.ellipsis),
-                      subtitle: Text(dev.deviceType, style: const TextStyle(fontSize: 11)),
-                      value: dev.deviceStatus,
-                      onChanged: (v) => onDeviceStatusChanged(i, v),
-                      dense: true,
+                    final bool hasExplore = dev.exploreDevName != null &&
+                        dev.exploreDevName!.isNotEmpty;
+                    final String portLabel = dev.portNumber != null
+                        ? 'Port ${dev.portNumber}'
+                        : dev.portId;
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              portLabel,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outline),
+                            ),
+                            SwitchListTile(
+                              title: Text(dev.deviceName,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 13)),
+                              subtitle: Text('Baseline (${dev.deviceType})',
+                                  style: const TextStyle(fontSize: 11)),
+                              value: baselineConnected.contains(i),
+                              onChanged: (v) => onBaselineToggled(i, v),
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            if (hasExplore)
+                              SwitchListTile(
+                                title: Text(dev.exploreDevName!,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 13)),
+                                subtitle: const Text('Explore',
+                                    style: TextStyle(fontSize: 11)),
+                                value: exploreConnected.contains(i),
+                                onChanged: (v) => onExploreToggled(i, v),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                activeColor: Colors.red,
+                              ),
+                          ],
+                        ),
+                      ),
                     );
                   }),
                 ],

@@ -154,7 +154,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
   }
 
   // ---------------------------------------------------------------------------
-  // calculateDevicePositions
+  // calculateDevicePositions  -- radial surround layout
   // ---------------------------------------------------------------------------
 
   @override
@@ -172,14 +172,12 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
     // Filter devices based on config mode and stacked switch state
     List<PortDevice> filteredDevices = List.from(devices);
 
-    // Config mode: only show baseline devices (status >= 0)
     if (isConfig) {
       filteredDevices = filteredDevices
           .where((d) => d.connectionStatus >= 0)
           .toList();
     }
 
-    // Stacked switch filtering
     if (_isStacked(devices)) {
       if (stackedSwitchSelectedPart == 1) {
         filteredDevices = filteredDevices
@@ -196,46 +194,207 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
                 d.portNumber! <= 48)
             .toList();
       } else {
-        // No part selected: no devices shown
         filteredDevices = [];
       }
     }
 
-    // Get total ports from the ports list
-    final int totalPorts = ports.length;
+    if (filteredDevices.isEmpty) {
+      return DevicePositions(
+        baselineDevices: const [],
+        exploreDevices: const [],
+      );
+    }
+
+    // --- Ellipse center (viewport center, not switch center) ---
+    // The switch is positioned above viewport center, so centering the
+    // ellipse on the viewport gives equal room for top and bottom devices.
+    final double ellipseCX = contentWidth / 2;
+    final double ellipseCY = contentHeight / 2;
+
+    // --- Device size by density tier ---
+    final int deviceCount = filteredDevices.length;
+    final double minDimension = math.min(contentWidth, contentHeight);
+
+    double sizeFactor;
+    double minSize, maxSize;
+    if (deviceCount <= 3) {
+      sizeFactor = 0.10;
+      minSize = 55;
+      maxSize = 100;
+    } else if (deviceCount <= 6) {
+      sizeFactor = 0.08;
+      minSize = 45;
+      maxSize = 85;
+    } else {
+      sizeFactor = 0.065;
+      minSize = 40;
+      maxSize = 75;
+    }
+    final double baseDeviceSize =
+        (minDimension * sizeFactor).clamp(minSize, maxSize);
+
+    // --- Compute ring gap and explore size upfront ---
+    final double exploreDeviceSize = baseDeviceSize * 0.7;
+    final double ringGap =
+        (baseDeviceSize + 30) / 2 + (exploreDeviceSize + 30) / 2 + 12;
+
+    // --- Two-ring radius calculation (sized from outside in) ---
+    final double exploreMargin = (exploreDeviceSize + 30) / 2 + 10;
+    final double baselineMargin = (baseDeviceSize + 30) / 2 + 10;
+
+    // Available space from ellipse center to viewport edge
+    final double availableUp = ellipseCY - exploreMargin;
+    final double availableDown = contentHeight - ellipseCY - exploreMargin;
+    final double availableLeft = ellipseCX - exploreMargin;
+    final double availableRight = contentWidth - ellipseCX - exploreMargin;
+
+    // Outer ring: fills to viewport edge
+    final double outerRadiusY = math.min(availableUp, availableDown);
+    final double outerRadiusX = math.min(availableLeft, availableRight);
+
+    // Inner ring: outer ring minus gap
+    final double radiusY = outerRadiusY - ringGap;
+    final double radiusX = outerRadiusX - ringGap;
+
+    // --- Port X normalization range ---
+    // Find min/max port X positions among ports that have connected devices
+    final Set<int> connectedPortNums =
+        filteredDevices.map((d) => d.portNumber ?? 0).toSet();
+    double minPortX = double.infinity;
+    double maxPortX = double.negativeInfinity;
+    for (final port in ports) {
+      if (port.portNumber != null && connectedPortNums.contains(port.portNumber)) {
+        final double px = port.position.dx + port.width / 2;
+        if (px < minPortX) minPortX = px;
+        if (px > maxPortX) maxPortX = px;
+      }
+    }
+    // Fallback if range is zero or invalid
+    if (minPortX >= maxPortX) {
+      minPortX = center.position.dx;
+      maxPortX = center.position.dx + center.size;
+    }
+    final double portXRange = maxPortX - minPortX;
+
+    // --- Build port lookup for X positions ---
+    final Map<int, double> portXByNum = {};
+    for (final port in ports) {
+      if (port.portNumber != null) {
+        portXByNum[port.portNumber!] = port.position.dx + port.width / 2;
+      }
+    }
+
+    // =====================================================================
+    // Two-ring staggered layout:
+    //   Inner ring = baseline devices (uniform spacing)
+    //   Outer ring = explore devices (uniform spacing, half-step offset)
+    // =====================================================================
+
+    // --- Step 1: Compute natural angles for sort order only ---
+    final List<_DeviceAngle> deviceAngles = [];
+    for (int i = 0; i < filteredDevices.length; i++) {
+      final device = filteredDevices[i];
+      final int portNum = device.portNumber ?? 0;
+      final bool isOddPort = portNum % 2 != 0;
+
+      double naturalAngle;
+      if (portNum == 0) {
+        naturalAngle = i % 2 == 0 ? 90.0 : 270.0;
+      } else {
+        final double portX = portXByNum[portNum] ??
+            (center.position.dx + center.size / 2);
+        final double normalizedX =
+            ((portX - minPortX) / portXRange).clamp(0.0, 1.0);
+
+        if (isOddPort) {
+          naturalAngle = 160.0 - normalizedX * 140.0;
+        } else {
+          naturalAngle = 200.0 + normalizedX * 140.0;
+        }
+      }
+
+      deviceAngles.add(_DeviceAngle(
+        device: device,
+        angle: naturalAngle,
+        index: i,
+      ));
+    }
+
+    // Sort by natural angle to preserve spatial mapping
+    deviceAngles.sort((a, b) => a.angle.compareTo(b.angle));
+
+    // --- Step 2: Assign uniform angles on inner ring ---
+    final int N = deviceAngles.length;
+    final double angleStep = 360.0 / N;
+    // Counterclockwise rotation offset so devices don't sit exactly at 0°/90°/180°/270°
+    const double rotationOffset = 15.0;
 
     final List<PositionedDevice> positioned = [];
+    // Map from portId+portNumber to uniform angle index for explore lookup
+    final Map<String, double> baselineAngleMap = {};
 
-    for (final device in filteredDevices) {
-      final int portNum = device.portNumber ?? 0;
-      final Offset pos = _calculateDevicePosition(
-        portNum,
-        totalPorts,
-        device.connectionStatus,
-        contentWidth,
-        contentHeight,
-      );
+    for (int i = 0; i < N; i++) {
+      final da = deviceAngles[i];
+      final double uniformAngle = i * angleStep + rotationOffset;
 
-      // Calculate device size
-      double scaleFactor = contentWidth / contentHeight;
-      scaleFactor = scaleFactor.clamp(0.5, 1.0);
-      double deviceSize = 75.0 * scaleFactor;
+      final double rad = uniformAngle * math.pi / 180;
+      double x = ellipseCX + radiusX * math.cos(rad);
+      double y = ellipseCY - radiusY * math.sin(rad);
 
-      // Adjust size for non-switch device types
-      if (device.deviceType != 'Switch') {
+      x = x.clamp(baselineMargin, contentWidth - baselineMargin);
+      y = y.clamp(baselineMargin, contentHeight - baselineMargin);
+
+      double deviceSize = baseDeviceSize;
+      if (da.device.deviceType != 'Switch') {
         deviceSize *= 0.8;
       }
 
       positioned.add(PositionedDevice(
-        position: pos,
+        position: Offset(x, y),
         size: deviceSize,
+        device: da.device,
+      ));
+
+      // Store uniform angle for explore device matching
+      final String key =
+          '${da.device.portId}_${da.device.portNumber}';
+      baselineAngleMap[key] = uniformAngle;
+    }
+
+    // --- Step 3: Place explore devices on outer ring ---
+    final List<PortDevice> exploreDevices = filteredDevices
+        .where((d) =>
+            ((d.exploreDevName != null && d.exploreDevName!.isNotEmpty) ||
+                (d.exploreDevIp != null && d.exploreDevIp!.isNotEmpty)) &&
+            !(d.deviceName == d.exploreDevName &&
+                d.deviceIp == d.exploreDevIp))
+        .toList();
+    final List<PositionedDevice> explorePositioned = [];
+    for (final device in exploreDevices) {
+      final String key = '${device.portId}_${device.portNumber}';
+      final double? baseAngle = baselineAngleMap[key];
+      if (baseAngle == null) continue;
+
+      // Same angle as baseline — lines go in the same direction, no crossing
+      final double exploreAngle = baseAngle;
+
+      final double rad = exploreAngle * math.pi / 180;
+      double x = ellipseCX + outerRadiusX * math.cos(rad);
+      double y = ellipseCY - outerRadiusY * math.sin(rad);
+
+      x = x.clamp(exploreMargin, contentWidth - exploreMargin);
+      y = y.clamp(exploreMargin, contentHeight - exploreMargin);
+
+      explorePositioned.add(PositionedDevice(
+        position: Offset(x, y),
+        size: exploreDeviceSize,
         device: device,
       ));
     }
 
     return DevicePositions(
       baselineDevices: positioned,
-      exploreDevices: const [], // Switch doesn't use explore tier
+      exploreDevices: explorePositioned,
     );
   }
 
@@ -250,68 +409,76 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
   ) {
     final List<DevFloat> result = [];
 
+    // Baseline devices
     for (final pd in positions.baselineDevices) {
-      final dev = pd.device;
-      final int portNum = dev.portNumber ?? 0;
+      result.add(_buildDevFloat(pd, pd.device.deviceName));
+    }
 
-      switch (dev.deviceType) {
-        case 'Switch':
-          result.add(SwitchDevFloat(
-            portstatus: dev.connectionStatus,
-            position: pd.position,
-            label: dev.deviceName,
-            size: pd.size,
-            connectedPortNum: portNum,
-            deviceStatus: isConfig ? true : dev.deviceStatus,
-          ));
-          break;
-        case 'MMI':
-        case 'Host':
-          result.add(HostDevFloat(
-            portstatus: dev.connectionStatus,
-            position: pd.position,
-            label: dev.deviceName,
-            size: pd.size,
-            connectedPortNum: portNum,
-            deviceStatus: isConfig ? true : dev.deviceStatus,
-          ));
-          break;
-        case 'DPU':
-          result.add(DpuDevFloat(
-            portstatus: dev.connectionStatus,
-            position: pd.position,
-            label: dev.deviceName,
-            size: pd.size,
-            connectedPortNum: portNum,
-            totalPfs: 0,
-            usedPfs: 0,
-            deviceStatus: isConfig ? true : dev.deviceStatus,
-          ));
-          break;
-        default:
-          // Process unknown device label
-          String processedLabel = dev.deviceName;
-          if (dev.deviceName.contains('+') &&
-              dev.deviceName.split('+').length >= 2) {
-            final List<String> parts = dev.deviceName.split('+');
-            if (parts[0].trim().isEmpty || parts[1].trim().isEmpty) {
-              processedLabel = 'Unknown Device';
-            }
-          }
-
-          result.add(UnknownDevFloat(
-            portstatus: dev.connectionStatus,
-            position: pd.position,
-            label: processedLabel,
-            size: pd.size,
-            connectedPortNum: portNum,
-            deviceStatus: isConfig ? true : dev.deviceStatus,
-          ));
-          break;
-      }
+    // Explore devices
+    for (final pd in positions.exploreDevices) {
+      final String label = (pd.device.exploreDevName != null &&
+              pd.device.exploreDevName!.isNotEmpty)
+          ? pd.device.exploreDevName!
+          : (pd.device.exploreDevIp ?? pd.device.deviceName);
+      result.add(_buildDevFloat(pd, label));
     }
 
     return result;
+  }
+
+  /// Build a DevFloat widget from a PositionedDevice and a label.
+  DevFloat _buildDevFloat(PositionedDevice pd, String label) {
+    final dev = pd.device;
+    final int portNum = dev.portNumber ?? 0;
+
+    switch (dev.deviceType) {
+      case 'Switch':
+        return SwitchDevFloat(
+          portstatus: dev.connectionStatus,
+          position: pd.position,
+          label: label,
+          size: pd.size,
+          connectedPortNum: portNum,
+          deviceStatus: isConfig ? true : dev.deviceStatus,
+        );
+      case 'MMI':
+      case 'Host':
+        return HostDevFloat(
+          portstatus: dev.connectionStatus,
+          position: pd.position,
+          label: label,
+          size: pd.size,
+          connectedPortNum: portNum,
+          deviceStatus: isConfig ? true : dev.deviceStatus,
+        );
+      case 'DPU':
+        return DpuDevFloat(
+          portstatus: dev.connectionStatus,
+          position: pd.position,
+          label: label,
+          size: pd.size,
+          connectedPortNum: portNum,
+          totalPfs: 0,
+          usedPfs: 0,
+          deviceStatus: isConfig ? true : dev.deviceStatus,
+        );
+      default:
+        String processedLabel = label;
+        if (label.contains('+') && label.split('+').length >= 2) {
+          final List<String> parts = label.split('+');
+          if (parts[0].trim().isEmpty || parts[1].trim().isEmpty) {
+            processedLabel = 'Unknown Device';
+          }
+        }
+        return UnknownDevFloat(
+          portstatus: dev.connectionStatus,
+          position: pd.position,
+          label: processedLabel,
+          size: pd.size,
+          connectedPortNum: portNum,
+          deviceStatus: isConfig ? true : dev.deviceStatus,
+        );
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -371,7 +538,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
   }
 
   // ---------------------------------------------------------------------------
-  // generateExploreConnections  -- switch doesn't use explore tier
+  // generateExploreConnections
   // ---------------------------------------------------------------------------
 
   @override
@@ -380,7 +547,38 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
     List<DevFloat> devices,
     List<PortDevice> portDevices,
   ) {
-    return const [];
+    final List<ConnectionLine> connections = [];
+
+    for (int i = 0; i < devices.length; i++) {
+      final DevFloat device = devices[i];
+
+      // Find matching port by portNumber
+      Port? matchedPort;
+      try {
+        matchedPort = ports.firstWhere(
+            (port) => port.portNumber == device.connectedPortNum);
+      } catch (_) {
+        continue;
+      }
+
+      final Offset portPoint = Offset(
+        matchedPort.position.dx + matchedPort.width / 2,
+        matchedPort.position.dy + matchedPort.height / 2,
+      );
+
+      final Offset deviceCenter =
+          Offset(device.position.dx, device.position.dy);
+
+      connections.add(ConnectionLine(
+        sourceOffset: portPoint,
+        targetOffset: deviceCenter,
+        status: -1, // explore connections are always red
+        portNumber: matchedPort.portNumber,
+        isConfig: isConfig,
+      ));
+    }
+
+    return connections;
   }
 
   // ---------------------------------------------------------------------------
@@ -394,101 +592,6 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
         (d) => d.portNumber != null && d.portNumber! > 24);
   }
 
-  /// Calculate the position for a single device based on its port number.
-  Offset _calculateDevicePosition(
-    int portNum,
-    int totalPorts,
-    int portStatus,
-    double contentWidth,
-    double contentHeight,
-  ) {
-    final bool isEvenPort = portNum % 2 == 0;
-    double scaleFactor = contentWidth / contentHeight;
-    scaleFactor = scaleFactor.clamp(0.5, 1.0);
-
-    final double imgSize = 75.0;
-    final double deviceSize = imgSize * scaleFactor;
-
-    // Margins and spacing
-    final double margin = 100.0 * scaleFactor;
-    final double usableWidth = contentWidth - (2 * margin);
-
-    // For 48-port switches, use 24-port spacing per layer
-    final int effectivePortsForSpacing = totalPorts == 48 ? 24 : totalPorts;
-    final double spacing = effectivePortsForSpacing / 2 > 1
-        ? (usableWidth - deviceSize) / (effectivePortsForSpacing / 2 - 1)
-        : 0;
-
-    // Calculate column index
-    int columnIndex = ((portNum + 1) / 2).toInt();
-
-    // For 48-port: remap ports 25-48 to columns 1-12
-    if (totalPorts == 48 && portNum >= 25) {
-      final int remappedPortNum = portNum - 24;
-      columnIndex = ((remappedPortNum + 1) / 2).toInt();
-    }
-
-    final double xPosition =
-        margin + deviceSize / 2 + (columnIndex - 1) * spacing;
-
-    // Vertical position
-    const double upperBorder = 30.0;
-    double baseYPosition;
-
-    if (isEvenPort) {
-      baseYPosition = contentHeight - imgSize - upperBorder;
-    } else {
-      baseYPosition = imgSize + upperBorder;
-    }
-
-    // Y offset based on connection status and config mode
-    double yOffset = 0;
-
-    if (isConfig) {
-      if (portStatus != -1) {
-        if (isEvenPort) {
-          yOffset = contentHeight * 0.01;
-        } else {
-          yOffset = -contentHeight * 0.01 - 30;
-        }
-      }
-    } else {
-      if (portStatus == -1) {
-        // Probed device (red line)
-        if (isEvenPort) {
-          yOffset = contentHeight * 0.01 - contentHeight * 0.1;
-        } else {
-          yOffset = -contentHeight * 0.01 - contentHeight * 0.05;
-        }
-      } else {
-        // Baseline or matched device
-        if (isEvenPort) {
-          yOffset = contentHeight * 0.01 - contentHeight * 0.2;
-        } else {
-          yOffset = -contentHeight * 0.01 + contentHeight * 0.1;
-        }
-      }
-    }
-
-    // Additional Y scatter for 48-port lower layer (ports 25-48)
-    if (totalPorts == 48 && portNum >= 25) {
-      if (isEvenPort) {
-        yOffset += contentHeight * 0.05;
-      } else {
-        yOffset -= contentHeight * 0.05;
-      }
-    }
-
-    // Additional upward shift for 48-port upper layer odd ports (1-24)
-    if (totalPorts == 48 && portNum <= 24 && !isEvenPort) {
-      yOffset -= contentHeight * 0.05;
-    }
-
-    final double yPosition = baseYPosition + yOffset;
-
-    return Offset(xPosition, yPosition);
-  }
-
   /// Convert PortStatus enum to bool? for Port.isUp.
   bool? _portStatusToBool(PortStatus status) {
     switch (status) {
@@ -500,4 +603,17 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
         return null;
     }
   }
+}
+
+/// Helper to pair a device with its computed angle for radial placement.
+class _DeviceAngle {
+  final PortDevice device;
+  final double angle;
+  final int index;
+
+  const _DeviceAngle({
+    required this.device,
+    required this.angle,
+    required this.index,
+  });
 }

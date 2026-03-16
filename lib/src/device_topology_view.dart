@@ -262,6 +262,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
               slotId: c.slotId,
               portNumber: c.portNumber,
               isConfig: c.isConfig,
+              curveDirection: c.curveDirection,
             ))
         .toList();
 
@@ -297,6 +298,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
             slotId: c.slotId,
             portNumber: c.portNumber,
             isConfig: c.isConfig,
+            curveDirection: c.curveDirection,
           );
         }
         return c;
@@ -324,6 +326,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                 slotId: c.slotId,
                 portNumber: c.portNumber,
                 isConfig: c.isConfig,
+                curveDirection: c.curveDirection,
               );
             }
             return c;

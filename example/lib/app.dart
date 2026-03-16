@@ -16,8 +16,11 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   int _currentScenarioIndex = 0;
-  late List<PortDevice> _portDevices;
+  late List<PortDevice> _allPortDevices; // full source of truth
   late Map<String, PortStatus> _portStatusMap;
+  late Set<int> _baselineConnected;
+  late Set<int> _exploreConnected;
+  late List<PortDevice> _portDevices; // cached filtered list
   bool _isConfig = false;
   bool _showPanel = false;
   int _stackedPart = 0;
@@ -26,6 +29,30 @@ class _AppState extends State<App> {
   int _topologyKey = 0;
 
   Scenario get _currentScenario => allScenarios[_currentScenarioIndex];
+
+  /// Rebuild the cached filtered port devices list from connection state.
+  void _rebuildPortDevices() {
+    final List<PortDevice> result = [];
+    for (int i = 0; i < _allPortDevices.length; i++) {
+      if (!_baselineConnected.contains(i)) continue;
+
+      final dev = _allPortDevices[i];
+      final bool showExplore = _exploreConnected.contains(i);
+
+      result.add(PortDevice(
+        portId: dev.portId,
+        deviceName: dev.deviceName,
+        portNumber: dev.portNumber,
+        deviceType: dev.deviceType,
+        deviceIp: dev.deviceIp,
+        exploreDevName: showExplore ? dev.exploreDevName : null,
+        exploreDevIp: showExplore ? dev.exploreDevIp : null,
+        connectionStatus: dev.connectionStatus,
+        deviceStatus: dev.deviceStatus,
+      ));
+    }
+    _portDevices = result;
+  }
 
   @override
   void initState() {
@@ -36,8 +63,12 @@ class _AppState extends State<App> {
   void _loadScenario(int index) {
     final scenario = allScenarios[index];
     _currentScenarioIndex = index;
-    _portDevices = List.of(scenario.portDevices);
+    _allPortDevices = List.of(scenario.portDevices);
     _portStatusMap = Map.of(scenario.portStatusMap);
+    _baselineConnected =
+        Set<int>.from(List.generate(_allPortDevices.length, (i) => i));
+    _exploreConnected =
+        Set<int>.from(List.generate(_allPortDevices.length, (i) => i));
     _isConfig = false;
     _eventLog = [];
     _topologyKey++;
@@ -48,6 +79,8 @@ class _AppState extends State<App> {
     } else {
       _stackedPart = 0;
     }
+
+    _rebuildPortDevices();
   }
 
   void _handleReset() {
@@ -64,11 +97,15 @@ class _AppState extends State<App> {
 
   void _handleDeviceCountChanged(int count) {
     setState(() {
-      if (count < _portDevices.length) {
-        _portDevices = _portDevices.sublist(0, count);
-      } else if (count > _portDevices.length) {
+      if (count < _allPortDevices.length) {
+        for (int i = count; i < _allPortDevices.length; i++) {
+          _baselineConnected.remove(i);
+          _exploreConnected.remove(i);
+        }
+        _allPortDevices = _allPortDevices.sublist(0, count);
+      } else if (count > _allPortDevices.length) {
         final scenario = _currentScenario;
-        final int existing = _portDevices.length;
+        final int existing = _allPortDevices.length;
         final int toAdd = count - existing;
         List<PortDevice> newDevices;
         switch (scenario.deviceType) {
@@ -82,25 +119,55 @@ class _AppState extends State<App> {
             newDevices = generateSwitchDevices(count).sublist(existing);
             break;
         }
-        _portDevices = [..._portDevices, ...newDevices.take(toAdd)];
+        final added = newDevices.take(toAdd).toList();
+        for (int i = 0; i < added.length; i++) {
+          _baselineConnected.add(existing + i);
+          _exploreConnected.add(existing + i);
+        }
+        _allPortDevices = [..._allPortDevices, ...added];
       }
+      _rebuildPortDevices();
     });
   }
 
-  void _handleDeviceStatusChanged(int index, bool status) {
+  void _handleBaselineToggled(int index, bool connected) {
     setState(() {
-      final dev = _portDevices[index];
-      _portDevices[index] = PortDevice(
-        portId: dev.portId,
-        deviceName: dev.deviceName,
-        portNumber: dev.portNumber,
-        deviceType: dev.deviceType,
-        deviceIp: dev.deviceIp,
-        exploreDevName: dev.exploreDevName,
-        exploreDevIp: dev.exploreDevIp,
-        connectionStatus: dev.connectionStatus,
-        deviceStatus: status,
-      );
+      if (connected) {
+        _baselineConnected.add(index);
+      } else {
+        _baselineConnected.remove(index);
+        _exploreConnected.remove(index);
+      }
+      _rebuildPortDevices();
+    });
+  }
+
+  void _handleExploreToggled(int index, bool connected) {
+    setState(() {
+      if (connected) {
+        _exploreConnected.add(index);
+      } else {
+        _exploreConnected.remove(index);
+      }
+      _rebuildPortDevices();
+    });
+  }
+
+  void _handleShowAllExplore() {
+    setState(() {
+      for (int i = 0; i < _allPortDevices.length; i++) {
+        if (_baselineConnected.contains(i)) {
+          _exploreConnected.add(i);
+        }
+      }
+      _rebuildPortDevices();
+    });
+  }
+
+  void _handleHideAllExplore() {
+    setState(() {
+      _exploreConnected.clear();
+      _rebuildPortDevices();
     });
   }
 
@@ -217,11 +284,16 @@ class _AppState extends State<App> {
               isConfig: _isConfig,
               onIsConfigChanged: (v) => setState(() => _isConfig = v),
               onRandomize: _handleRandomize,
-              deviceCount: _portDevices.length,
+              deviceCount: _allPortDevices.length,
               maxDevices: scenario.maxDevices,
               onDeviceCountChanged: _handleDeviceCountChanged,
-              portDevices: _portDevices,
-              onDeviceStatusChanged: _handleDeviceStatusChanged,
+              portDevices: _allPortDevices,
+              baselineConnected: _baselineConnected,
+              exploreConnected: _exploreConnected,
+              onBaselineToggled: _handleBaselineToggled,
+              onExploreToggled: _handleExploreToggled,
+              onShowAllExplore: _handleShowAllExplore,
+              onHideAllExplore: _handleHideAllExplore,
               onReset: _handleReset,
               eventLog: _eventLog,
               onClearLog: () => setState(() => _eventLog = []),

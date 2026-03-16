@@ -9,98 +9,15 @@ final List<Scenario> allScenarios = [
   _hostScenario(4),
   _hostScenario(5),
   _hostScenario(6),
+  _dpuScenario1P(),
   _dpuScenario(),
-  _switchScenario(
-    label: 'Switch 6P',
-    format: const SwitchUD1U6P(),
-    devices: [
-      const PortDevice(portId: '1', deviceName: 'Switch-A', portNumber: 1, deviceType: 'Switch', deviceIp: '10.0.1.1', connectionStatus: 1),
-      const PortDevice(portId: '3', deviceName: 'Host-1', portNumber: 3, deviceType: 'Host', deviceIp: '10.0.1.2', connectionStatus: 0),
-      const PortDevice(portId: '5', deviceName: 'Unknown-1', portNumber: 5, deviceType: 'Unknown', deviceIp: '10.0.1.3', connectionStatus: -1),
-    ],
-    totalPorts: 6,
-  ),
-  _switchScenario(
-    label: 'Switch 10P',
-    format: const SwitchUD1U10P(),
-    devices: [
-      const PortDevice(portId: '1', deviceName: 'Switch-A', portNumber: 1, deviceType: 'Switch', deviceIp: '10.0.2.1', connectionStatus: 1),
-      const PortDevice(portId: '4', deviceName: 'Host-1', portNumber: 4, deviceType: 'Host', deviceIp: '10.0.2.2', connectionStatus: 0),
-      const PortDevice(portId: '7', deviceName: 'DPU-1', portNumber: 7, deviceType: 'DPU', deviceIp: '10.0.2.3', connectionStatus: 1),
-      const PortDevice(portId: '10', deviceName: 'MMI-1', portNumber: 10, deviceType: 'MMI', deviceIp: '10.0.2.4', connectionStatus: 0),
-    ],
-    totalPorts: 10,
-  ),
-  _switchScenario(
-    label: 'Switch 16P',
-    format: const SwitchUD1U16P(),
-    devices: [
-      const PortDevice(portId: '1', deviceName: 'Switch-A', portNumber: 1, deviceType: 'Switch', deviceIp: '10.0.3.1', connectionStatus: 1),
-      const PortDevice(portId: '4', deviceName: 'Host-1', portNumber: 4, deviceType: 'Host', deviceIp: '10.0.3.2', connectionStatus: 0),
-      const PortDevice(portId: '8', deviceName: 'DPU-1', portNumber: 8, deviceType: 'DPU', deviceIp: '10.0.3.3', connectionStatus: 1),
-      const PortDevice(portId: '11', deviceName: 'Switch-B', portNumber: 11, deviceType: 'Switch', deviceIp: '10.0.3.4', connectionStatus: -1),
-      const PortDevice(portId: '15', deviceName: 'Unknown-1', portNumber: 15, deviceType: 'Unknown', deviceIp: '10.0.3.5', connectionStatus: 0),
-    ],
-    totalPorts: 16,
-  ),
-  _switchScenario(
-    label: 'Switch 24P',
-    format: const SwitchUD1U24P(),
-    devices: [
-      const PortDevice(portId: '1', deviceName: 'Switch-A', portNumber: 1, deviceType: 'Switch', deviceIp: '10.0.4.1', connectionStatus: 1),
-      const PortDevice(portId: '3', deviceName: 'Host-1', portNumber: 3, deviceType: 'Host', deviceIp: '10.0.4.2', connectionStatus: 0),
-      const PortDevice(portId: '6', deviceName: 'DPU-1', portNumber: 6, deviceType: 'DPU', deviceIp: '10.0.4.3', connectionStatus: 1),
-      const PortDevice(portId: '9', deviceName: 'Unknown-1', portNumber: 9, deviceType: 'Unknown', deviceIp: '10.0.4.4', connectionStatus: -1),
-      const PortDevice(portId: '12', deviceName: 'Switch-B', portNumber: 12, deviceType: 'Switch', deviceIp: '10.0.4.5', connectionStatus: 1),
-      const PortDevice(portId: '15', deviceName: 'MMI-1', portNumber: 15, deviceType: 'MMI', deviceIp: '10.0.4.6', connectionStatus: 0),
-      const PortDevice(portId: '18', deviceName: 'Host-2', portNumber: 18, deviceType: 'Host', deviceIp: '10.0.4.7', connectionStatus: 0),
-      const PortDevice(portId: '21', deviceName: 'DPU-2', portNumber: 21, deviceType: 'DPU', deviceIp: '10.0.4.8', connectionStatus: 1),
-    ],
-    totalPorts: 24,
-  ),
-  _switchScenario(
-    label: 'Switch 28P',
-    format: const SwitchUD1U28P(),
-    devices: [
-      const PortDevice(portId: '1', deviceName: 'Switch-A', portNumber: 1, deviceType: 'Switch', deviceIp: '10.0.5.1', connectionStatus: 1),
-      const PortDevice(portId: '5', deviceName: 'Host-1', portNumber: 5, deviceType: 'Host', deviceIp: '10.0.5.2', connectionStatus: 0),
-      const PortDevice(portId: '10', deviceName: 'DPU-1', portNumber: 10, deviceType: 'DPU', deviceIp: '10.0.5.3', connectionStatus: 1),
-      const PortDevice(portId: '15', deviceName: 'Switch-B', portNumber: 15, deviceType: 'Switch', deviceIp: '10.0.5.4', connectionStatus: -1),
-      const PortDevice(portId: '20', deviceName: 'Unknown-1', portNumber: 20, deviceType: 'Unknown', deviceIp: '10.0.5.5', connectionStatus: 0),
-      const PortDevice(portId: '25', deviceName: 'Host-2', portNumber: 25, deviceType: 'Host', deviceIp: '10.0.5.6', connectionStatus: 1),
-    ],
-    totalPorts: 28,
-  ),
-  _switchScenario(
-    label: 'Switch 30P (Stacked)',
-    format: const SwitchUD1U30PStacked(),
-    devices: [
-      const PortDevice(portId: '2', deviceName: 'Switch-A', portNumber: 2, deviceType: 'Switch', deviceIp: '10.0.6.1', connectionStatus: 1),
-      const PortDevice(portId: '8', deviceName: 'Host-1', portNumber: 8, deviceType: 'Host', deviceIp: '10.0.6.2', connectionStatus: 0),
-      const PortDevice(portId: '14', deviceName: 'DPU-1', portNumber: 14, deviceType: 'DPU', deviceIp: '10.0.6.3', connectionStatus: 1),
-      const PortDevice(portId: '20', deviceName: 'Switch-B', portNumber: 20, deviceType: 'Switch', deviceIp: '10.0.6.4', connectionStatus: -1),
-      const PortDevice(portId: '25', deviceName: 'Host-2', portNumber: 25, deviceType: 'Host', deviceIp: '10.0.6.5', connectionStatus: 0),
-      const PortDevice(portId: '28', deviceName: 'Unknown-1', portNumber: 28, deviceType: 'Unknown', deviceIp: '10.0.6.6', connectionStatus: 1),
-    ],
-    totalPorts: 48, // Must be 48 (format.totalPortsNum) so port status map covers all layout ports
-  ),
-  _switchScenario(
-    label: 'Switch 48P (Stacked)',
-    format: const SwitchUD1U48PStacked(),
-    devices: [
-      const PortDevice(portId: '1', deviceName: 'Switch-A', portNumber: 1, deviceType: 'Switch', deviceIp: '10.0.7.1', connectionStatus: 1),
-      const PortDevice(portId: '5', deviceName: 'Host-1', portNumber: 5, deviceType: 'Host', deviceIp: '10.0.7.2', connectionStatus: 0),
-      const PortDevice(portId: '10', deviceName: 'DPU-1', portNumber: 10, deviceType: 'DPU', deviceIp: '10.0.7.3', connectionStatus: 1),
-      const PortDevice(portId: '15', deviceName: 'MMI-1', portNumber: 15, deviceType: 'MMI', deviceIp: '10.0.7.4', connectionStatus: 0),
-      const PortDevice(portId: '20', deviceName: 'Unknown-1', portNumber: 20, deviceType: 'Unknown', deviceIp: '10.0.7.5', connectionStatus: -1),
-      const PortDevice(portId: '25', deviceName: 'Switch-B', portNumber: 25, deviceType: 'Switch', deviceIp: '10.0.7.6', connectionStatus: 1),
-      const PortDevice(portId: '30', deviceName: 'Host-2', portNumber: 30, deviceType: 'Host', deviceIp: '10.0.7.7', connectionStatus: 0),
-      const PortDevice(portId: '35', deviceName: 'DPU-2', portNumber: 35, deviceType: 'DPU', deviceIp: '10.0.7.8', connectionStatus: 1),
-      const PortDevice(portId: '40', deviceName: 'Switch-C', portNumber: 40, deviceType: 'Switch', deviceIp: '10.0.7.9', connectionStatus: -1),
-      const PortDevice(portId: '45', deviceName: 'Host-3', portNumber: 45, deviceType: 'Host', deviceIp: '10.0.7.10', connectionStatus: 0),
-    ],
-    totalPorts: 48,
-  ),
+  _switchScenarioFull(label: 'Switch 6P', format: const SwitchUD1U6P(), totalPorts: 6),
+  _switchScenarioFull(label: 'Switch 10P', format: const SwitchUD1U10P(), totalPorts: 10),
+  _switchScenarioFull(label: 'Switch 16P', format: const SwitchUD1U16P(), totalPorts: 16),
+  _switchScenarioFull(label: 'Switch 24P', format: const SwitchUD1U24P(), totalPorts: 24),
+  _switchScenarioFull(label: 'Switch 28P', format: const SwitchUD1U28P(), totalPorts: 28),
+  _switchScenarioFull(label: 'Switch 30P (Stacked)', format: const SwitchUD1U30PStacked(), totalPorts: 48),
+  _switchScenarioFull(label: 'Switch 48P (Stacked)', format: const SwitchUD1U48PStacked(), totalPorts: 48),
 ];
 
 Scenario _hostScenario(int deviceCount) {
@@ -136,9 +53,9 @@ Scenario _hostScenario(int deviceCount) {
   );
 }
 
-Scenario _dpuScenario() {
+Scenario _dpuScenario1P() {
   return Scenario(
-    label: 'DPU',
+    label: 'DPU (1 port)',
     deviceType: DeviceType.dpu,
     format: const DPUTemplate(),
     portDevices: const [
@@ -147,7 +64,33 @@ Scenario _dpuScenario() {
         deviceName: 'Switch-A',
         deviceType: 'Switch',
         deviceIp: '10.0.10.1',
-        connectionStatus: 1,
+        exploreDevName: 'Probe-Switch-A',
+        exploreDevIp: '10.0.99.1',
+        connectionStatus: 0,
+        deviceStatus: true,
+      ),
+    ],
+    portStatusMap: const {
+      'slotA': PortStatus.up,
+    },
+    centerLabel: 'DPU-Node',
+  );
+}
+
+Scenario _dpuScenario() {
+  return Scenario(
+    label: 'DPU (2 port)',
+    deviceType: DeviceType.dpu,
+    format: const DPUTemplate(),
+    portDevices: const [
+      PortDevice(
+        portId: 'slotA',
+        deviceName: 'Switch-A',
+        deviceType: 'Switch',
+        deviceIp: '10.0.10.1',
+        exploreDevName: 'Probe-Switch-A',
+        exploreDevIp: '10.0.99.1',
+        connectionStatus: 0,
         deviceStatus: true,
       ),
       PortDevice(
@@ -155,8 +98,10 @@ Scenario _dpuScenario() {
         deviceName: 'Switch-B',
         deviceType: 'Switch',
         deviceIp: '10.0.10.2',
-        connectionStatus: 1,
-        deviceStatus: true,
+        exploreDevName: 'Probe-Switch-B',
+        exploreDevIp: '10.0.99.2',
+        connectionStatus: 0,
+        deviceStatus: false,
       ),
     ],
     portStatusMap: const {
@@ -167,17 +112,37 @@ Scenario _dpuScenario() {
   );
 }
 
-Scenario _switchScenario({
+const List<String> _deviceTypes = ['Switch', 'Host', 'DPU', 'MMI', 'Unknown'];
+
+Scenario _switchScenarioFull({
   required String label,
   required SwitchDeviceFormat format,
-  required List<PortDevice> devices,
   required int totalPorts,
 }) {
   final portStatusMap = <String, PortStatus>{};
+  final devices = <PortDevice>[];
+
   for (int i = 1; i <= totalPorts; i++) {
     portStatusMap[i.toString()] = i % 3 == 0
         ? PortStatus.up
         : (i % 3 == 1 ? PortStatus.down : PortStatus.unknown);
+
+    final String type = _deviceTypes[(i - 1) % _deviceTypes.length];
+    final int typeIndex = (i - 1) ~/ _deviceTypes.length + 1;
+    final String name = '$type-$typeIndex';
+    final int status = i % 3 == 0 ? 1 : (i % 3 == 1 ? 0 : -1);
+
+    devices.add(PortDevice(
+      portId: '$i',
+      deviceName: name,
+      portNumber: i,
+      deviceType: type,
+      deviceIp: '10.0.0.$i',
+      exploreDevName: 'Probe-$name',
+      exploreDevIp: '10.0.99.$i',
+      connectionStatus: status,
+      deviceStatus: i % 5 != 0,
+    ));
   }
 
   return Scenario(
