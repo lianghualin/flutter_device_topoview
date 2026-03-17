@@ -27,11 +27,19 @@ class ControlPanel extends StatelessWidget {
     this.isStacked = false,
     this.stackedPart = 1,
     this.onStackedPartChanged,
+    this.enableAnimations = true,
+    this.onEnableAnimationsChanged,
+    this.fullMismatch = false,
+    this.onFullMismatchChanged,
     super.key,
   });
 
   final bool isConfig;
   final ValueChanged<bool> onIsConfigChanged;
+  final bool enableAnimations;
+  final ValueChanged<bool>? onEnableAnimationsChanged;
+  final bool fullMismatch;
+  final ValueChanged<bool>? onFullMismatchChanged;
   final VoidCallback onRandomize;
   final int deviceCount;
   final int maxDevices;
@@ -108,6 +116,20 @@ class ControlPanel extends StatelessWidget {
                     subtitle: const Text('Configuration mode'),
                     value: isConfig,
                     onChanged: onIsConfigChanged,
+                    dense: true,
+                  ),
+                  SwitchListTile(
+                    title: const Text('Animations'),
+                    subtitle: const Text('Glow, flow, fade, scale'),
+                    value: enableAnimations,
+                    onChanged: onEnableAnimationsChanged,
+                    dense: true,
+                  ),
+                  SwitchListTile(
+                    title: const Text('Full Mismatch'),
+                    subtitle: const Text('All ports: baseline + explore'),
+                    value: fullMismatch,
+                    onChanged: onFullMismatchChanged,
                     dense: true,
                   ),
                   const SizedBox(height: 8),

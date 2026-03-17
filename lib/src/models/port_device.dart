@@ -9,6 +9,7 @@ class PortDevice {
     this.exploreDevIp,
     this.connectionStatus = 0,
     this.deviceStatus = true,
+    this.exploreUtilization,
   });
 
   /// Port/slot identifier. e.g. "slotA", "Port1", "23"
@@ -37,4 +38,8 @@ class PortDevice {
 
   /// true=normal (green indicator), false=abnormal (red indicator)
   final bool deviceStatus;
+
+  /// Explore device utilization (0.0-1.0). Only meaningful when exploreDevName is set.
+  /// null = no utilization data available.
+  final double? exploreUtilization;
 }

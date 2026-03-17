@@ -329,39 +329,27 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
     // Counterclockwise rotation offset so devices don't sit exactly at 0°/90°/180°/270°
     const double rotationOffset = 15.0;
 
-    final List<PositionedDevice> positioned = [];
-    // Map from portId+portNumber to uniform angle index for explore lookup
-    final Map<String, double> baselineAngleMap = {};
-
+    // Compute uniform angles and store per-device
+    final Map<String, double> angleMap = {};
     for (int i = 0; i < N; i++) {
       final da = deviceAngles[i];
       final double uniformAngle = i * angleStep + rotationOffset;
-
-      final double rad = uniformAngle * math.pi / 180;
-      double x = ellipseCX + radiusX * math.cos(rad);
-      double y = ellipseCY - radiusY * math.sin(rad);
-
-      x = x.clamp(baselineMargin, contentWidth - baselineMargin);
-      y = y.clamp(baselineMargin, contentHeight - baselineMargin);
-
-      double deviceSize = baseDeviceSize;
-      if (da.device.deviceType != 'Switch') {
-        deviceSize *= 0.8;
-      }
-
-      positioned.add(PositionedDevice(
-        position: Offset(x, y),
-        size: deviceSize,
-        device: da.device,
-      ));
-
-      // Store uniform angle for explore device matching
-      final String key =
-          '${da.device.portId}_${da.device.portNumber}';
-      baselineAngleMap[key] = uniformAngle;
+      final String key = '${da.device.portId}_${da.device.portNumber}';
+      angleMap[key] = uniformAngle;
     }
 
-    // --- Step 3: Place explore devices on outer ring ---
+    // --- Split devices into real (inner ring) and config (outer ring) ---
+    //
+    // Inner ring (real connections):
+    //   - Green matched (status 1): baseline == explore, verified real device
+    //   - Explore devices: discovered real devices (from mismatch pairs)
+    //
+    // Outer ring (configured/expected):
+    //   - Baseline with status 0: configured but unverified
+    //   - Baseline with status -1: probed
+    //   - Baseline from mismatch pairs (status 0 with explore): the "expected" side
+
+    // Explore devices (from mismatch: baseline != explore)
     final List<PortDevice> exploreDevices = filteredDevices
         .where((d) =>
             ((d.exploreDevName != null && d.exploreDevName!.isNotEmpty) ||
@@ -369,32 +357,77 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
             !(d.deviceName == d.exploreDevName &&
                 d.deviceIp == d.exploreDevIp))
         .toList();
-    final List<PositionedDevice> explorePositioned = [];
+    final Set<String> explorePortKeys =
+        exploreDevices.map((d) => '${d.portId}_${d.portNumber}').toSet();
+
+    final List<PositionedDevice> innerPositioned = []; // real devices
+    final List<PositionedDevice> outerPositioned = []; // config devices
+
+    for (final da in deviceAngles) {
+      final dev = da.device;
+      final String key = '${dev.portId}_${dev.portNumber}';
+      final double angle = angleMap[key]!;
+      final double rad = angle * math.pi / 180;
+
+      double deviceSize = baseDeviceSize;
+      if (dev.deviceType != 'Switch') {
+        deviceSize *= 0.8;
+      }
+
+      final bool isReal = dev.connectionStatus == 1 || dev.connectionStatus == -1;
+      final bool hasMismatchExplore = explorePortKeys.contains(key);
+
+      if (isReal) {
+        // Green matched or probed → inner ring (real/discovered device)
+        double x = ellipseCX + radiusX * math.cos(rad);
+        double y = ellipseCY - radiusY * math.sin(rad);
+        x = x.clamp(baselineMargin, contentWidth - baselineMargin);
+        y = y.clamp(baselineMargin, contentHeight - baselineMargin);
+        innerPositioned.add(PositionedDevice(
+          position: Offset(x, y), size: deviceSize, device: dev));
+      } else if (hasMismatchExplore) {
+        // Mismatch baseline (status 0) → outer ring (config)
+        double x = ellipseCX + outerRadiusX * math.cos(rad);
+        double y = ellipseCY - outerRadiusY * math.sin(rad);
+        x = x.clamp(exploreMargin, contentWidth - exploreMargin);
+        y = y.clamp(exploreMargin, contentHeight - exploreMargin);
+        outerPositioned.add(PositionedDevice(
+          position: Offset(x, y), size: exploreDeviceSize, device: dev));
+      } else {
+        // Status 0 (unverified), no explore → outer ring (config)
+        double x = ellipseCX + outerRadiusX * math.cos(rad);
+        double y = ellipseCY - outerRadiusY * math.sin(rad);
+        x = x.clamp(exploreMargin, contentWidth - exploreMargin);
+        y = y.clamp(exploreMargin, contentHeight - exploreMargin);
+        outerPositioned.add(PositionedDevice(
+          position: Offset(x, y), size: exploreDeviceSize, device: dev));
+      }
+    }
+
+    // Place explore devices on inner ring (real discovered devices)
     for (final device in exploreDevices) {
       final String key = '${device.portId}_${device.portNumber}';
-      final double? baseAngle = baselineAngleMap[key];
-      if (baseAngle == null) continue;
+      final double? angle = angleMap[key];
+      if (angle == null) continue;
 
-      // Same angle as baseline — lines go in the same direction, no crossing
-      final double exploreAngle = baseAngle;
+      final double rad = angle * math.pi / 180;
+      double x = ellipseCX + radiusX * math.cos(rad);
+      double y = ellipseCY - radiusY * math.sin(rad);
+      x = x.clamp(baselineMargin, contentWidth - baselineMargin);
+      y = y.clamp(baselineMargin, contentHeight - baselineMargin);
 
-      final double rad = exploreAngle * math.pi / 180;
-      double x = ellipseCX + outerRadiusX * math.cos(rad);
-      double y = ellipseCY - outerRadiusY * math.sin(rad);
+      double deviceSize = baseDeviceSize;
+      if (device.deviceType != 'Switch') {
+        deviceSize *= 0.8;
+      }
 
-      x = x.clamp(exploreMargin, contentWidth - exploreMargin);
-      y = y.clamp(exploreMargin, contentHeight - exploreMargin);
-
-      explorePositioned.add(PositionedDevice(
-        position: Offset(x, y),
-        size: exploreDeviceSize,
-        device: device,
-      ));
+      innerPositioned.add(PositionedDevice(
+        position: Offset(x, y), size: deviceSize, device: device));
     }
 
     return DevicePositions(
-      baselineDevices: positioned,
-      exploreDevices: explorePositioned,
+      baselineDevices: outerPositioned, // config on outer
+      exploreDevices: innerPositioned,  // real on inner
     );
   }
 
@@ -409,25 +442,40 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
   ) {
     final List<DevFloat> result = [];
 
-    // Baseline devices
+    // Outer ring devices (config/baseline) — baselineDevices in DevicePositions
     for (final pd in positions.baselineDevices) {
-      result.add(_buildDevFloat(pd, pd.device.deviceName));
+      result.add(_buildDevFloat(pd, pd.device.deviceName,
+          isReal: false));
     }
 
-    // Explore devices
+    // Inner ring devices (real connections) — exploreDevices in DevicePositions
     for (final pd in positions.exploreDevices) {
-      final String label = (pd.device.exploreDevName != null &&
-              pd.device.exploreDevName!.isNotEmpty)
-          ? pd.device.exploreDevName!
-          : (pd.device.exploreDevIp ?? pd.device.deviceName);
-      result.add(_buildDevFloat(pd, label));
+      final dev = pd.device;
+
+      String label;
+      if (dev.connectionStatus == 1 || dev.connectionStatus == -1) {
+        // Green matched or probed: use baseline name (it IS the real device)
+        label = dev.deviceName;
+      } else {
+        // Explore device from mismatch: use explore name
+        label = (dev.exploreDevName != null && dev.exploreDevName!.isNotEmpty)
+            ? dev.exploreDevName!
+            : (dev.exploreDevIp ?? dev.deviceName);
+      }
+
+      result.add(_buildDevFloat(pd, label,
+          isReal: true,
+          utilization: dev.exploreUtilization));
     }
 
     return result;
   }
 
   /// Build a DevFloat widget from a PositionedDevice and a label.
-  DevFloat _buildDevFloat(PositionedDevice pd, String label) {
+  DevFloat _buildDevFloat(PositionedDevice pd, String label, {
+    bool isReal = false,
+    double? utilization,
+  }) {
     final dev = pd.device;
     final int portNum = dev.portNumber ?? 0;
 
@@ -440,6 +488,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
           size: pd.size,
           connectedPortNum: portNum,
           deviceStatus: isConfig ? true : dev.deviceStatus,
+          utilization: utilization,
+          isRealDevice: isReal,
         );
       case 'MMI':
       case 'Host':
@@ -450,6 +500,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
           size: pd.size,
           connectedPortNum: portNum,
           deviceStatus: isConfig ? true : dev.deviceStatus,
+          utilization: utilization,
+          isRealDevice: isReal,
         );
       case 'DPU':
         return DpuDevFloat(
@@ -461,6 +513,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
           totalPfs: 0,
           usedPfs: 0,
           deviceStatus: isConfig ? true : dev.deviceStatus,
+          utilization: utilization,
+          isRealDevice: isReal,
         );
       default:
         String processedLabel = label;
@@ -477,6 +531,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
           size: pd.size,
           connectedPortNum: portNum,
           deviceStatus: isConfig ? true : dev.deviceStatus,
+          utilization: utilization,
+          isRealDevice: isReal,
         );
     }
   }
@@ -531,6 +587,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
         status: device.portstatus,
         portNumber: matchedPort.portNumber,
         isConfig: isConfig,
+        forceCurve: true, // outer ring lines are always curved
       ));
     }
 
@@ -569,10 +626,14 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
       final Offset deviceCenter =
           Offset(device.position.dx, device.position.dy);
 
+      // Inner ring: use actual device status for line color
+      // Green matched (status 1) → green solid line
+      // Explore mismatch → red line (status from device, typically -1 or 0)
+      final int lineStatus = device.portstatus == 1 ? 1 : -1;
       connections.add(ConnectionLine(
         sourceOffset: portPoint,
         targetOffset: deviceCenter,
-        status: -1, // explore connections are always red
+        status: lineStatus,
         portNumber: matchedPort.portNumber,
         isConfig: isConfig,
       ));

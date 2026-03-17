@@ -18,6 +18,8 @@ class DpuDevFloat extends DevFloat {
     required super.deviceStatus,
     super.deviceIp,
     super.portId,
+    super.utilization,
+    super.isRealDevice,
   }) : super(deviceType: 'DPU');
 
   @override
@@ -29,6 +31,7 @@ class DpuDevFloat extends DevFloat {
     Function({int? deviceToKeepHighlighted})? onClearPortHighlight,
     DeviceSelectedCallback? onDeviceTapped,
     double? dimOpacity,
+    bool enableAnimations = true,
   }) {
     String uniqueKeyString = '${portId}_${label}_${deviceType}_$portstatus';
 
@@ -50,6 +53,9 @@ class DpuDevFloat extends DevFloat {
       totalPfs: totalPfs,
       usedPfs: usedPfs,
       dimOpacity: dimOpacity,
+      enableAnimations: enableAnimations,
+      utilization: utilization,
+      isRealDevice: isRealDevice,
     );
   }
 }
@@ -76,6 +82,9 @@ class DpuDevFloatWidget extends DevFloatWidget {
     required this.totalPfs,
     required this.usedPfs,
     super.dimOpacity,
+    super.enableAnimations,
+    super.utilization,
+    super.isRealDevice,
   });
 
   @override

@@ -28,6 +28,7 @@ class DeviceTopologyView extends StatefulWidget {
     this.onDeviceSelected,
     this.initialStackedSwitchPart,
     this.onStackedSwitchPartChanged,
+    this.enableAnimations = true,
     super.key,
   });
 
@@ -42,15 +43,19 @@ class DeviceTopologyView extends StatefulWidget {
       onDeviceSelected;
   final int? initialStackedSwitchPart;
   final void Function(int part)? onStackedSwitchPartChanged;
+  final bool enableAnimations;
 
   @override
   State<DeviceTopologyView> createState() => _DeviceTopologyViewState();
 }
 
 class _DeviceTopologyViewState extends State<DeviceTopologyView>
-    with PanZoomMixin {
+    with PanZoomMixin, TickerProviderStateMixin {
   // Layout strategy
   late DeviceLayoutStrategy _strategy;
+
+  // Dash flow animation for connection lines
+  late AnimationController _dashFlowController;
 
   // Computed layout state
   late CenterDeviceLayout _centerLayout;
@@ -85,9 +90,22 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   @override
   void initState() {
     super.initState();
+    _dashFlowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    if (widget.enableAnimations) {
+      _dashFlowController.repeat();
+    }
     _stackedSwitchSelectedPart = widget.initialStackedSwitchPart ?? 0;
     _createStrategy();
     _initializeLayout();
+  }
+
+  @override
+  void dispose() {
+    _dashFlowController.dispose();
+    super.dispose();
   }
 
   @override
@@ -101,6 +119,14 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         !identical(widget.portStatusMap, oldWidget.portStatusMap)) {
       _createStrategy();
       _initializeLayout();
+    }
+    if (widget.enableAnimations != oldWidget.enableAnimations) {
+      if (widget.enableAnimations) {
+        _dashFlowController.repeat();
+      } else {
+        _dashFlowController.stop();
+        _dashFlowController.value = 0;
+      }
     }
   }
 
@@ -276,6 +302,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
               portNumber: c.portNumber,
               isConfig: c.isConfig,
               curveDirection: c.curveDirection,
+              forceCurve: c.forceCurve,
             ))
         .toList();
 
@@ -312,6 +339,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
             portNumber: c.portNumber,
             isConfig: c.isConfig,
             curveDirection: c.curveDirection,
+            forceCurve: c.forceCurve,
           );
         }
         return c;
@@ -340,6 +368,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                 portNumber: c.portNumber,
                 isConfig: c.isConfig,
                 curveDirection: c.curveDirection,
+                forceCurve: c.forceCurve,
               );
             }
             return c;
@@ -493,20 +522,29 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                         : null,
                   ),
                   // Layer 2: Explore connections
-                  ConnectionsLayer(
-                    connections: _exploreConnections,
-                    activePortNumber: _switchActivePort,
+                  AnimatedBuilder(
+                    animation: _dashFlowController,
+                    builder: (context, _) => ConnectionsLayer(
+                      connections: _exploreConnections,
+                      activePortNumber: _switchActivePort,
+                      dashFlowValue: widget.enableAnimations ? _dashFlowController.value : 0,
+                    ),
                   ),
                   // Layer 3: Explore floating devices
                   DevLayer(
                     devices: _exploreDevices,
                     onExternalDeviceSelected: widget.onDeviceSelected,
                     activePortNumber: _switchActivePort,
+                    enableAnimations: widget.enableAnimations,
                   ),
                   // Layer 4: Baseline connections
-                  ConnectionsLayer(
-                    connections: _baseConnections,
-                    activePortNumber: _switchActivePort,
+                  AnimatedBuilder(
+                    animation: _dashFlowController,
+                    builder: (context, _) => ConnectionsLayer(
+                      connections: _baseConnections,
+                      activePortNumber: _switchActivePort,
+                      dashFlowValue: widget.enableAnimations ? _dashFlowController.value : 0,
+                    ),
                   ),
                   // Layer 5: Baseline floating devices
                   DevLayer(
@@ -516,6 +554,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                     onClearPortHighlight: _handleClearPortHighlight,
                     onExternalDeviceSelected: widget.onDeviceSelected,
                     activePortNumber: _switchActivePort,
+                    enableAnimations: widget.enableAnimations,
                   ),
                   // Layer 6: Ports
                   PortLayer(

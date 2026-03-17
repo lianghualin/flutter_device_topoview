@@ -11,6 +11,7 @@ class DevLayer extends StatefulWidget {
   final Function(int)? onDeviceSelected;
   final DeviceSelectedCallback? onExternalDeviceSelected;
   final int? activePortNumber;
+  final bool enableAnimations;
 
   const DevLayer({
     super.key,
@@ -20,6 +21,7 @@ class DevLayer extends StatefulWidget {
     this.onDeviceSelected,
     this.onExternalDeviceSelected,
     this.activePortNumber,
+    this.enableAnimations = true,
   });
 
   @override
@@ -46,9 +48,12 @@ class _DevLayerState extends State<DevLayer> {
             onDeviceSelected: _handleDeviceSelected,
             onClearPortHighlight: widget.onClearPortHighlight,
             onDeviceTapped: widget.onExternalDeviceSelected,
-            dimOpacity: active != null && device.connectedPortNum != active
-                ? 0.15
-                : null,
+            dimOpacity: active == null
+                ? null
+                : device.connectedPortNum == active
+                    ? 1.0
+                    : 0.15,
+            enableAnimations: widget.enableAnimations,
           ),
       ],
     );

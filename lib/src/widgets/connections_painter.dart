@@ -5,23 +5,32 @@ class ConnectionsPainter extends CustomPainter {
   final List<ConnectionLine> connections;
   final double animationValue;
   final int? activePortNumber;
+  final double dashFlowValue;
 
   ConnectionsPainter({
     required this.connections,
     this.animationValue = 0.0,
     this.activePortNumber,
+    this.dashFlowValue = 0.0,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
     for (final connection in connections) {
-      final bool isDimmed = activePortNumber != null &&
-          connection.portNumber != activePortNumber;
+      final bool isActive = activePortNumber != null &&
+          connection.portNumber == activePortNumber;
+      final bool isDimmed = activePortNumber != null && !isActive;
+
       if (isDimmed) {
-        canvas.saveLayer(null, Paint()..color = Colors.white.withValues(alpha: 0.1));
+        // Smooth dim: paint at low opacity
+        canvas.saveLayer(
+            null, Paint()..color = Colors.white.withValues(alpha: 0.1));
         connection.paint(canvas, animationValue: animationValue);
         canvas.restore();
+      } else if (isActive) {
+        // Spotlight: paint with flowing dash animation
+        connection.paintSpotlit(canvas, dashFlowValue: dashFlowValue);
       } else {
         connection.paint(canvas, animationValue: animationValue);
       }
@@ -33,7 +42,8 @@ class ConnectionsPainter extends CustomPainter {
   bool shouldRepaint(ConnectionsPainter oldDelegate) {
     return oldDelegate.connections != connections ||
         oldDelegate.animationValue != animationValue ||
-        oldDelegate.activePortNumber != activePortNumber;
+        oldDelegate.activePortNumber != activePortNumber ||
+        oldDelegate.dashFlowValue != dashFlowValue;
   }
 }
 
@@ -41,12 +51,14 @@ class ConnectionsLayer extends StatelessWidget {
   final List<ConnectionLine> connections;
   final double animationValue;
   final int? activePortNumber;
+  final double dashFlowValue;
 
   const ConnectionsLayer({
     super.key,
     required this.connections,
     this.animationValue = 0.0,
     this.activePortNumber,
+    this.dashFlowValue = 0.0,
   });
 
   @override
@@ -56,6 +68,7 @@ class ConnectionsLayer extends StatelessWidget {
         connections: connections,
         animationValue: animationValue,
         activePortNumber: activePortNumber,
+        dashFlowValue: dashFlowValue,
       ),
     );
   }

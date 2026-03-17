@@ -22,6 +22,8 @@ class _AppState extends State<App> {
   late Set<int> _exploreConnected;
   late List<PortDevice> _portDevices; // cached filtered list
   bool _isConfig = false;
+  bool _enableAnimations = true;
+  bool _fullMismatch = false;
   bool _showPanel = false;
   int _stackedPart = 0;
   List<String> _eventLog = [];
@@ -49,6 +51,7 @@ class _AppState extends State<App> {
         exploreDevIp: showExplore ? dev.exploreDevIp : null,
         connectionStatus: dev.connectionStatus,
         deviceStatus: dev.deviceStatus,
+        exploreUtilization: showExplore ? dev.exploreUtilization : null,
       ));
     }
     _portDevices = result;
@@ -95,6 +98,25 @@ class _AppState extends State<App> {
     });
   }
 
+  void _handleFullMismatchChanged(bool value) {
+    setState(() {
+      _fullMismatch = value;
+      // Regenerate all devices with new mismatch mode
+      final scenario = _currentScenario;
+      final int count = _allPortDevices.length;
+      _allPortDevices = generateDevices(
+        deviceType: scenario.deviceType,
+        count: count,
+        fullMismatch: value,
+      );
+      _baselineConnected =
+          Set<int>.from(List.generate(_allPortDevices.length, (i) => i));
+      _exploreConnected =
+          Set<int>.from(List.generate(_allPortDevices.length, (i) => i));
+      _rebuildPortDevices();
+    });
+  }
+
   void _handleDeviceCountChanged(int count) {
     setState(() {
       if (count < _allPortDevices.length) {
@@ -107,18 +129,11 @@ class _AppState extends State<App> {
         final scenario = _currentScenario;
         final int existing = _allPortDevices.length;
         final int toAdd = count - existing;
-        List<PortDevice> newDevices;
-        switch (scenario.deviceType) {
-          case DeviceType.host:
-            newDevices = generateHostDevices(count).sublist(existing);
-            break;
-          case DeviceType.dpu:
-            newDevices = generateDpuDevices(count).sublist(existing);
-            break;
-          case DeviceType.switch_:
-            newDevices = generateSwitchDevices(count).sublist(existing);
-            break;
-        }
+        final List<PortDevice> newDevices = generateDevices(
+          deviceType: scenario.deviceType,
+          count: count,
+          fullMismatch: _fullMismatch,
+        ).sublist(existing);
         final added = newDevices.take(toAdd).toList();
         for (int i = 0; i < added.length; i++) {
           _baselineConnected.add(existing + i);
@@ -257,6 +272,7 @@ class _AppState extends State<App> {
                   portStatusMap: _portStatusMap,
                   centerLabel: scenario.centerLabel,
                   isConfig: _isConfig,
+                  enableAnimations: _enableAnimations,
                   onDeviceSelected: _handleDeviceSelected,
                   initialStackedSwitchPart: isStacked ? _stackedPart : null,
                   onStackedSwitchPartChanged: isStacked
@@ -283,6 +299,10 @@ class _AppState extends State<App> {
             child: ControlPanel(
               isConfig: _isConfig,
               onIsConfigChanged: (v) => setState(() => _isConfig = v),
+              enableAnimations: _enableAnimations,
+              onEnableAnimationsChanged: (v) => setState(() => _enableAnimations = v),
+              fullMismatch: _fullMismatch,
+              onFullMismatchChanged: _handleFullMismatchChanged,
               onRandomize: _handleRandomize,
               deviceCount: _allPortDevices.length,
               maxDevices: scenario.maxDevices,

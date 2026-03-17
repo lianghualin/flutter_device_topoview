@@ -13,6 +13,8 @@ class HostDevFloat extends DevFloat {
     required super.deviceStatus,
     super.deviceIp,
     super.portId,
+    super.utilization,
+    super.isRealDevice,
   }) : super(deviceType: 'Host');
 
   @override
@@ -24,6 +26,7 @@ class HostDevFloat extends DevFloat {
     Function({int? deviceToKeepHighlighted})? onClearPortHighlight,
     DeviceSelectedCallback? onDeviceTapped,
     double? dimOpacity,
+    bool enableAnimations = true,
   }) {
     String uniqueKeyString = '${portId}_${label}_${deviceType}_$portstatus';
 
@@ -43,6 +46,9 @@ class HostDevFloat extends DevFloat {
       onClearPortHighlight: onClearPortHighlight,
       onDeviceTappedExternally: onDeviceTapped,
       dimOpacity: dimOpacity,
+      enableAnimations: enableAnimations,
+      utilization: utilization,
+      isRealDevice: isRealDevice,
     );
   }
 }
@@ -64,6 +70,9 @@ class HostDevFloatWidget extends DevFloatWidget {
     super.onClearPortHighlight,
     super.onDeviceTappedExternally,
     super.dimOpacity,
+    super.enableAnimations,
+    super.utilization,
+    super.isRealDevice,
   });
 
   @override
