@@ -13,7 +13,8 @@ class HostDevFloat extends DevFloat {
     required super.deviceStatus,
     super.deviceIp,
     super.portId,
-    super.utilization,
+    super.inboundUtilization,
+    super.outboundUtilization,
     super.isRealDevice,
   }) : super(deviceType: 'Host');
 
@@ -47,7 +48,8 @@ class HostDevFloat extends DevFloat {
       onDeviceTappedExternally: onDeviceTapped,
       dimOpacity: dimOpacity,
       enableAnimations: enableAnimations,
-      utilization: utilization,
+      inboundUtilization: inboundUtilization,
+      outboundUtilization: outboundUtilization,
       isRealDevice: isRealDevice,
     );
   }
@@ -71,7 +73,8 @@ class HostDevFloatWidget extends DevFloatWidget {
     super.onDeviceTappedExternally,
     super.dimOpacity,
     super.enableAnimations,
-    super.utilization,
+    super.inboundUtilization,
+    super.outboundUtilization,
     super.isRealDevice,
   });
 
@@ -81,6 +84,14 @@ class HostDevFloatWidget extends DevFloatWidget {
 
 class _HostDevFloatWidgetState
     extends DevFloatWidgetState<HostDevFloatWidget> {
+  @override
+  Widget buildCompactIcon(double animationValue) {
+    return SvgClip(
+      path: 'assets/images/host_float.svg',
+      elevation: 2 + animationValue * 5,
+    );
+  }
+
   @override
   Widget buildDeviceIcon(double animationValue) {
     final backgroundColor = widget.deviceStatus == true

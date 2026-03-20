@@ -18,7 +18,8 @@ class DpuDevFloat extends DevFloat {
     required super.deviceStatus,
     super.deviceIp,
     super.portId,
-    super.utilization,
+    super.inboundUtilization,
+    super.outboundUtilization,
     super.isRealDevice,
   }) : super(deviceType: 'DPU');
 
@@ -54,7 +55,8 @@ class DpuDevFloat extends DevFloat {
       usedPfs: usedPfs,
       dimOpacity: dimOpacity,
       enableAnimations: enableAnimations,
-      utilization: utilization,
+      inboundUtilization: inboundUtilization,
+      outboundUtilization: outboundUtilization,
       isRealDevice: isRealDevice,
     );
   }
@@ -83,7 +85,8 @@ class DpuDevFloatWidget extends DevFloatWidget {
     required this.usedPfs,
     super.dimOpacity,
     super.enableAnimations,
-    super.utilization,
+    super.inboundUtilization,
+    super.outboundUtilization,
     super.isRealDevice,
   });
 
@@ -92,6 +95,14 @@ class DpuDevFloatWidget extends DevFloatWidget {
 }
 
 class _DpuDevFloatWidgetState extends DevFloatWidgetState<DpuDevFloatWidget> {
+  @override
+  Widget buildCompactIcon(double animationValue) {
+    return SvgPicture.asset(
+      'assets/images/dpu_float.svg',
+      package: 'device_topology_view',
+    );
+  }
+
   @override
   Widget buildDeviceIcon(double animationValue) {
     final backgroundColor = widget.deviceStatus == true

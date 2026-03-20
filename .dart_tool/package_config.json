@@ -50,6 +50,12 @@
       "languageVersion": "3.9"
     },
     {
+      "name": "flutter_device_ring",
+      "rootUri": "file:///Users/hualinliang/.pub-cache/hosted/pub.dev/flutter_device_ring-0.2.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.5"
+    },
+    {
       "name": "flutter_svg",
       "rootUri": "file:///Users/hualinliang/.pub-cache/hosted/pub.dev/flutter_svg-2.2.4",
       "packageUri": "lib/",

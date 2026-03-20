@@ -24,6 +24,7 @@ class _AppState extends State<App> {
   bool _isConfig = false;
   bool _enableAnimations = true;
   bool _fullMismatch = false;
+  bool _showOuterRing = true;
   bool _showPanel = false;
   int _stackedPart = 0;
   List<String> _eventLog = [];
@@ -51,7 +52,8 @@ class _AppState extends State<App> {
         exploreDevIp: showExplore ? dev.exploreDevIp : null,
         connectionStatus: dev.connectionStatus,
         deviceStatus: dev.deviceStatus,
-        exploreUtilization: showExplore ? dev.exploreUtilization : null,
+        exploreInboundUtilization: showExplore ? dev.exploreInboundUtilization : null,
+        exploreOutboundUtilization: showExplore ? dev.exploreOutboundUtilization : null,
       ));
     }
     _portDevices = result;
@@ -73,6 +75,7 @@ class _AppState extends State<App> {
     _exploreConnected =
         Set<int>.from(List.generate(_allPortDevices.length, (i) => i));
     _isConfig = false;
+    _showOuterRing = true;
     _eventLog = [];
     _topologyKey++;
 
@@ -170,19 +173,13 @@ class _AppState extends State<App> {
 
   void _handleShowAllExplore() {
     setState(() {
-      for (int i = 0; i < _allPortDevices.length; i++) {
-        if (_baselineConnected.contains(i)) {
-          _exploreConnected.add(i);
-        }
-      }
-      _rebuildPortDevices();
+      _showOuterRing = true;
     });
   }
 
   void _handleHideAllExplore() {
     setState(() {
-      _exploreConnected.clear();
-      _rebuildPortDevices();
+      _showOuterRing = false;
     });
   }
 
@@ -273,6 +270,7 @@ class _AppState extends State<App> {
                   centerLabel: scenario.centerLabel,
                   isConfig: _isConfig,
                   enableAnimations: _enableAnimations,
+                  showOuterRing: _showOuterRing,
                   onDeviceSelected: _handleDeviceSelected,
                   initialStackedSwitchPart: isStacked ? _stackedPart : null,
                   onStackedSwitchPartChanged: isStacked

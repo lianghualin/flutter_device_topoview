@@ -62,6 +62,9 @@ abstract class SlotBasedLayoutStrategy extends DeviceLayoutStrategy {
         deviceStatus: dev.deviceStatus,
         deviceIp: dev.exploreDevIp,
         portId: dev.portId,
+        inboundUtilization: dev.exploreInboundUtilization,
+        outboundUtilization: dev.exploreOutboundUtilization,
+        isRealDevice: true,
       ));
     }
 

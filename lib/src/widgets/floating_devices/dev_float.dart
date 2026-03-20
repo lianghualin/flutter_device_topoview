@@ -1,6 +1,5 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:flutter_device_ring/flutter_device_ring.dart';
 
 // Callback for external device selection
 typedef DeviceSelectedCallback = void Function(
@@ -18,7 +17,8 @@ abstract class DevFloat {
   final bool deviceStatus;
   final String? deviceIp;
   final String portId;
-  final double? utilization;
+  final double? inboundUtilization;
+  final double? outboundUtilization;
   final bool isRealDevice;
 
   DevFloat({
@@ -32,7 +32,8 @@ abstract class DevFloat {
     required this.deviceStatus,
     this.deviceIp,
     this.portId = '',
-    this.utilization,
+    this.inboundUtilization,
+    this.outboundUtilization,
     this.isRealDevice = false,
   });
 
@@ -69,7 +70,8 @@ abstract class DevFloatWidget extends StatefulWidget {
   final DeviceSelectedCallback? onDeviceTappedExternally;
   final double? dimOpacity;
   final bool enableAnimations;
-  final double? utilization;
+  final double? inboundUtilization;
+  final double? outboundUtilization;
   final bool isRealDevice;
 
   static bool showOutline = false;
@@ -91,7 +93,8 @@ abstract class DevFloatWidget extends StatefulWidget {
     this.onDeviceTappedExternally,
     this.dimOpacity,
     this.enableAnimations = true,
-    this.utilization,
+    this.inboundUtilization,
+    this.outboundUtilization,
     this.isRealDevice = false,
   });
 }
@@ -100,13 +103,16 @@ abstract class DevFloatWidget extends StatefulWidget {
 abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
     with TickerProviderStateMixin {
   late AnimationController _controller;
-  late AnimationController _pulseController;
 
   /// Check if this device is currently selected
   bool get isSelected => widget.selectedDeviceId == widget.deviceId;
 
   /// Whether this device is in the spotlight (not dimmed)
   bool get _isSpotlit => widget.dimOpacity == null || widget.dimOpacity == 1.0;
+
+  /// Whether this device should show the DeviceRing.
+  /// True for all real (explore) devices — uses 0.0 when utilization is null.
+  bool get _showRing => widget.isRealDevice;
 
   /// Build the device label. Subclasses can override for custom display.
   Widget buildLabel() {
@@ -134,16 +140,9 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
 
     if (widget.isHighlighted || isSelected) {
       _controller.value = 1.0;
-    }
-    if (_isSpotlit && widget.dimOpacity != null) {
-      _pulseController.repeat(reverse: true);
     }
   }
 
@@ -161,28 +160,22 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
         _controller.reverse();
       }
     }
-
-    // Start/stop pulse glow based on spotlight state
-    final bool wasSpotlit =
-        oldWidget.dimOpacity == null || oldWidget.dimOpacity == 1.0;
-    final bool hadDimContext = oldWidget.dimOpacity != null;
-    if (widget.enableAnimations && _isSpotlit && widget.dimOpacity != null && (!wasSpotlit || !hadDimContext)) {
-      _pulseController.repeat(reverse: true);
-    } else if (!widget.enableAnimations || !_isSpotlit || widget.dimOpacity == null) {
-      _pulseController.stop();
-      _pulseController.value = 0;
-    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _pulseController.dispose();
     super.dispose();
   }
 
   /// Build the device icon. Subclasses must implement this.
   Widget buildDeviceIcon(double animationValue);
+
+  /// Build a compact icon for use inside DeviceRing (no background circle or padding).
+  /// Subclasses should override this to return just the SVG/icon.
+  Widget buildCompactIcon(double animationValue) {
+    return buildDeviceIcon(animationValue);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +189,7 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
         : _controller.value;
 
     return AnimatedBuilder(
-        animation: Listenable.merge([_controller, _pulseController]),
+        animation: _controller,
         builder: (context, child) {
           final double hoverOffset = _controller.value * 2;
 
@@ -207,93 +200,71 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
           double scale = 1.0;
           if (widget.dimOpacity != null && widget.enableAnimations) {
             if (_isSpotlit) {
-              scale = 1.0 + 0.10 * _pulseController.value * 0.3 + 0.05;
+              scale = 1.05;
             } else {
               scale = 0.95;
             }
           }
 
           // Determine if we should show info instead of icon
-          final bool showUtilInfo = widget.isRealDevice &&
-              widget.utilization != null &&
+          final bool showUtilInfo = _showRing &&
+              widget.inboundUtilization != null &&
               _isSpotlit &&
               widget.dimOpacity != null;
 
-          // Build the center content: icon or utilization info
-          Widget centerContent;
-          if (showUtilInfo) {
-            // Icon swaps to utilization info
-            final double util = widget.utilization!;
-            final Color utilColor = _utilizationColor(util);
-            final String tierLabel = _utilizationTier(util);
-            centerContent = SizedBox(
-              width: widget.size,
-              height: widget.size,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${(util * 100).round()}%',
-                      style: TextStyle(
-                        color: utilColor,
-                        fontSize: widget.size * 0.3,
-                        fontWeight: FontWeight.bold,
-                        height: 1.1,
-                      ),
-                    ),
-                    Text(
-                      tierLabel,
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: widget.size * 0.15,
-                        height: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          } else {
-            centerContent = buildDeviceIcon(_controller.value);
-          }
+          // Build the center content: device icon
+          Widget centerContent = buildDeviceIcon(_controller.value);
 
-          // Build ring gauge for explore devices with utilization
+          // Build device content with or without ring
           Widget deviceContent;
-          if (widget.isRealDevice && widget.utilization != null) {
-            final double util = widget.utilization!;
-            final Color utilColor = _utilizationColor(util);
-            deviceContent = SizedBox(
-              width: visualSize,
-              height: visualSize,
-              child: Stack(
-                alignment: Alignment.topCenter,
-                children: [
-                  // Ring gauge
-                  Positioned(
-                    top: (visualSize - widget.size - 6) / 2,
-                    left: (visualSize - widget.size - 6) / 2,
-                    child: CustomPaint(
-                      size: Size(widget.size + 6, widget.size + 6),
-                      painter: _RingGaugePainter(
-                        utilization: util,
-                        color: utilColor,
-                        strokeWidth: 4.0,
-                      ),
+          if (_showRing) {
+            final double ringSize = widget.size + 30;
+
+            // Status halo: green=normal, red=abnormal — always visible.
+            final Color statusColor = widget.deviceStatus
+                ? const Color(0xFF00B42A).withValues(alpha: 0.3)
+                : const Color(0xFFF53F3F).withValues(alpha: 0.3);
+
+            // DeviceRing with built-in label, wrapped in status halo
+            deviceContent = Stack(
+              alignment: Alignment.center,
+              children: [
+                // Status halo circle behind the ring
+                Positioned(
+                  top: 0,
+                  child: Container(
+                    width: ringSize,
+                    height: ringSize,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
                     ),
                   ),
-                  centerContent,
-                  Positioned(
-                    bottom: 4,
-                    left: 0,
-                    right: 0,
-                    child: Opacity(
-                      opacity: textOpacity,
-                      child: buildLabel(),
-                    ),
+                ),
+                // DeviceRing with label handled by the package
+                DeviceRing(
+                  inbound: widget.inboundUtilization ?? 0.0,
+                  outbound: widget.outboundUtilization ?? 0.0,
+                  size: ringSize,
+                  showGlow: _isSpotlit &&
+                      widget.dimOpacity != null &&
+                      widget.enableAnimations,
+                  showInfo: showUtilInfo,
+                  theme: const DeviceRingTheme(
+                    showDirectionLabels: false,
                   ),
-                ],
-              ),
+                  labelWidget: Opacity(
+                    opacity: textOpacity,
+                    child: buildLabel(),
+                  ),
+                  labelMaxWidth: visualSize,
+                  labelBackgroundDecoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: buildCompactIcon(_controller.value),
+                ),
+              ],
             );
           } else {
             deviceContent = SizedBox(
@@ -314,31 +285,6 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
                   ),
                 ],
               ),
-            );
-          }
-
-          // Pulse glow effect when spotlit
-          if (_isSpotlit && widget.dimOpacity != null && widget.enableAnimations) {
-            final Color glowColor = widget.isRealDevice && widget.utilization != null
-                ? _utilizationColor(widget.utilization!)
-                : (widget.portstatus == -1 ? Colors.red : Colors.green);
-            final double glowOpacity =
-                0.2 + 0.4 * _pulseController.value;
-            final double glowSpread =
-                4.0 + 8.0 * _pulseController.value;
-
-            deviceContent = Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: glowColor.withValues(alpha: glowOpacity),
-                    blurRadius: glowSpread,
-                    spreadRadius: glowSpread * 0.3,
-                  ),
-                ],
-              ),
-              child: deviceContent,
             );
           }
 
@@ -398,68 +344,5 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
             child: content,
           );
         });
-  }
-
-  /// Get color for utilization tier.
-  static Color _utilizationColor(double util) {
-    if (util >= 0.95) return Colors.red;
-    if (util >= 0.8) return Colors.red;
-    if (util >= 0.5) return Colors.orange;
-    return Colors.green;
-  }
-
-  /// Get label for utilization tier.
-  static String _utilizationTier(double util) {
-    if (util >= 0.95) return 'CRIT';
-    if (util >= 0.8) return 'HIGH';
-    if (util >= 0.5) return 'MED';
-    return 'LOW';
-  }
-}
-
-/// Custom painter for the utilization ring gauge arc.
-class _RingGaugePainter extends CustomPainter {
-  final double utilization;
-  final Color color;
-  final double strokeWidth;
-
-  _RingGaugePainter({
-    required this.utilization,
-    required this.color,
-    this.strokeWidth = 4.0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - strokeWidth) / 2;
-
-    // Background ring
-    final bgPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..color = Colors.grey.withValues(alpha: 0.2);
-    canvas.drawCircle(center, radius, bgPaint);
-
-    // Utilization arc (clockwise from top)
-    final arcPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..color = color;
-    final sweepAngle = 2 * math.pi * utilization;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2, // start from top
-      sweepAngle,
-      false,
-      arcPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_RingGaugePainter oldDelegate) {
-    return oldDelegate.utilization != utilization ||
-        oldDelegate.color != color;
   }
 }

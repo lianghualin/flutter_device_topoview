@@ -205,11 +205,22 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
       );
     }
 
-    // --- Ellipse center (viewport center, not switch center) ---
-    // The switch is positioned above viewport center, so centering the
-    // ellipse on the viewport gives equal room for top and bottom devices.
-    final double ellipseCX = contentWidth / 2;
-    final double ellipseCY = contentHeight / 2;
+    // --- Ellipse center = center of all ports ---
+    // Ports sit on the switch widget. Center the rings on the port area
+    // so lines radiate evenly outward.
+    double portsCX = center.position.dx + center.size / 2;
+    double portsCY = center.position.dy + center.size / 2;
+    if (ports.isNotEmpty) {
+      double sumX = 0, sumY = 0;
+      for (final port in ports) {
+        sumX += port.position.dx + port.width / 2;
+        sumY += port.position.dy + port.height / 2;
+      }
+      portsCX = sumX / ports.length;
+      portsCY = sumY / ports.length;
+    }
+    final double ellipseCX = portsCX;
+    final double ellipseCY = portsCY;
 
     // --- Device size by density tier ---
     final int deviceCount = filteredDevices.length;
@@ -328,6 +339,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
     final double angleStep = 360.0 / N;
     // Counterclockwise rotation offset so devices don't sit exactly at 0°/90°/180°/270°
     const double rotationOffset = 15.0;
+    // Outer ring rotates clockwise by half-step so curved lines don't cross inner devices
+    final double outerRingOffset = -(angleStep / 2);
 
     // Compute uniform angles and store per-device
     final Map<String, double> angleMap = {};
@@ -386,17 +399,19 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
         innerPositioned.add(PositionedDevice(
           position: Offset(x, y), size: deviceSize, device: dev));
       } else if (hasMismatchExplore) {
-        // Mismatch baseline (status 0) → outer ring (config)
-        double x = ellipseCX + outerRadiusX * math.cos(rad);
-        double y = ellipseCY - outerRadiusY * math.sin(rad);
+        // Mismatch baseline (status 0) → outer ring (config), rotated
+        final double outerRad = (angle + outerRingOffset) * math.pi / 180;
+        double x = ellipseCX + outerRadiusX * math.cos(outerRad);
+        double y = ellipseCY - outerRadiusY * math.sin(outerRad);
         x = x.clamp(exploreMargin, contentWidth - exploreMargin);
         y = y.clamp(exploreMargin, contentHeight - exploreMargin);
         outerPositioned.add(PositionedDevice(
           position: Offset(x, y), size: exploreDeviceSize, device: dev));
       } else {
-        // Status 0 (unverified), no explore → outer ring (config)
-        double x = ellipseCX + outerRadiusX * math.cos(rad);
-        double y = ellipseCY - outerRadiusY * math.sin(rad);
+        // Status 0 (unverified), no explore → outer ring (config), rotated
+        final double outerRad = (angle + outerRingOffset) * math.pi / 180;
+        double x = ellipseCX + outerRadiusX * math.cos(outerRad);
+        double y = ellipseCY - outerRadiusY * math.sin(outerRad);
         x = x.clamp(exploreMargin, contentWidth - exploreMargin);
         y = y.clamp(exploreMargin, contentHeight - exploreMargin);
         outerPositioned.add(PositionedDevice(
@@ -465,7 +480,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
 
       result.add(_buildDevFloat(pd, label,
           isReal: true,
-          utilization: dev.exploreUtilization));
+          inboundUtilization: dev.exploreInboundUtilization,
+          outboundUtilization: dev.exploreOutboundUtilization));
     }
 
     return result;
@@ -474,7 +490,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
   /// Build a DevFloat widget from a PositionedDevice and a label.
   DevFloat _buildDevFloat(PositionedDevice pd, String label, {
     bool isReal = false,
-    double? utilization,
+    double? inboundUtilization,
+    double? outboundUtilization,
   }) {
     final dev = pd.device;
     final int portNum = dev.portNumber ?? 0;
@@ -488,7 +505,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
           size: pd.size,
           connectedPortNum: portNum,
           deviceStatus: isConfig ? true : dev.deviceStatus,
-          utilization: utilization,
+          inboundUtilization: inboundUtilization,
+          outboundUtilization: outboundUtilization,
           isRealDevice: isReal,
         );
       case 'MMI':
@@ -500,7 +518,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
           size: pd.size,
           connectedPortNum: portNum,
           deviceStatus: isConfig ? true : dev.deviceStatus,
-          utilization: utilization,
+          inboundUtilization: inboundUtilization,
+          outboundUtilization: outboundUtilization,
           isRealDevice: isReal,
         );
       case 'DPU':
@@ -513,7 +532,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
           totalPfs: 0,
           usedPfs: 0,
           deviceStatus: isConfig ? true : dev.deviceStatus,
-          utilization: utilization,
+          inboundUtilization: inboundUtilization,
+          outboundUtilization: outboundUtilization,
           isRealDevice: isReal,
         );
       default:
@@ -531,7 +551,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
           size: pd.size,
           connectedPortNum: portNum,
           deviceStatus: isConfig ? true : dev.deviceStatus,
-          utilization: utilization,
+          inboundUtilization: inboundUtilization,
+          outboundUtilization: outboundUtilization,
           isRealDevice: isReal,
         );
     }

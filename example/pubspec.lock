@@ -69,6 +69,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_device_ring:
+    dependency: transitive
+    description:
+      name: flutter_device_ring
+      sha256: "20faedc27b562846b7013c5a8e397eec50b4a3844daaa21ac68870f776c5c387"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.1"
   flutter_lints:
     dependency: "direct dev"
     description:

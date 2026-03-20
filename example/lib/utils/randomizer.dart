@@ -114,7 +114,8 @@ PortDevice _buildPortDevice({
       exploreDevIp: exploreIp,
       connectionStatus: 0,
       deviceStatus: true,
-      exploreUtilization: _random.nextDouble(),
+      exploreInboundUtilization: _random.nextDouble(),
+      exploreOutboundUtilization: _random.nextDouble(),
     );
   }
 
@@ -133,7 +134,8 @@ PortDevice _buildPortDevice({
         exploreDevIp: baselineIp,
         connectionStatus: 1,
         deviceStatus: true,
-        exploreUtilization: _random.nextDouble(),
+        exploreInboundUtilization: _random.nextDouble(),
+      exploreOutboundUtilization: _random.nextDouble(),
       );
     case 1:
       // Black dashed: baseline only, no explore data
@@ -172,7 +174,8 @@ PortDevice _buildPortDevice({
         exploreDevIp: exploreIp,
         connectionStatus: 0,
         deviceStatus: _random.nextDouble() > 0.3,
-        exploreUtilization: _random.nextDouble(),
+        exploreInboundUtilization: _random.nextDouble(),
+      exploreOutboundUtilization: _random.nextDouble(),
       );
   }
 }

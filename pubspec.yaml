@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_svg: ^2.0.9
+  flutter_device_ring: ^0.2.0
   path_drawing: ^1.0.0
 
 dev_dependencies:

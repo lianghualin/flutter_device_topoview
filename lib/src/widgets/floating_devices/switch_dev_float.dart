@@ -13,7 +13,8 @@ class SwitchDevFloat extends DevFloat {
     required super.deviceStatus,
     super.deviceIp,
     super.portId,
-    super.utilization,
+    super.inboundUtilization,
+    super.outboundUtilization,
     super.isRealDevice,
   }) : super(deviceType: 'Switch');
 
@@ -47,7 +48,8 @@ class SwitchDevFloat extends DevFloat {
       onDeviceTappedExternally: onDeviceTapped,
       dimOpacity: dimOpacity,
       enableAnimations: enableAnimations,
-      utilization: utilization,
+      inboundUtilization: inboundUtilization,
+      outboundUtilization: outboundUtilization,
       isRealDevice: isRealDevice,
     );
   }
@@ -71,7 +73,8 @@ class SwitchDevFloatWidget extends DevFloatWidget {
     super.onDeviceTappedExternally,
     super.dimOpacity,
     super.enableAnimations,
-    super.utilization,
+    super.inboundUtilization,
+    super.outboundUtilization,
     super.isRealDevice,
   });
 
@@ -81,6 +84,14 @@ class SwitchDevFloatWidget extends DevFloatWidget {
 
 class _SwitchDevFloatWidgetState
     extends DevFloatWidgetState<SwitchDevFloatWidget> {
+  @override
+  Widget buildCompactIcon(double animationValue) {
+    return SvgClip(
+      path: 'assets/images/switch_float.svg',
+      elevation: 2 + animationValue * 5,
+    );
+  }
+
   @override
   Widget buildDeviceIcon(double animationValue) {
     final backgroundColor = widget.deviceStatus == true
