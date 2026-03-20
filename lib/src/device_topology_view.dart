@@ -233,13 +233,17 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
     }
     // Check for overlaps between all elements
     final List<_DebugRect> allRects = [];
-    // Center device
+    // Center device — use actual rendered dimensions (wSizeFactor × hSizeFactor)
+    final double centerW = _centerLayout.size * widget.format.wSizeFactor;
+    final double centerH = _centerLayout.size * widget.format.hSizeFactor;
+    final double centerLeft = _centerLayout.position.dx + _centerLayout.size * (1 - widget.format.wSizeFactor);
+    final double centerTop = _centerLayout.position.dy + _centerLayout.size * widget.format.hSizeFactor;
     allRects.add(_DebugRect(
       'Center',
-      _centerLayout.position.dx,
-      _centerLayout.position.dy,
-      _centerLayout.position.dx + _centerLayout.size,
-      _centerLayout.position.dy + _centerLayout.size,
+      centerLeft,
+      centerTop,
+      centerLeft + centerW,
+      centerTop + centerH,
     ));
     // Baseline devices
     for (int i = 0; i < _devicePositions.baselineDevices.length; i++) {
@@ -566,7 +570,9 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       animation: _dashFlowController,
                       builder: (context, _) => ConnectionsLayer(
                         connections: _baseConnections,
+                        activePortNumber: _switchActivePort,
                         dashFlowValue: widget.enableAnimations ? _dashFlowController.value : 0,
+                        dimOnly: true,
                       ),
                     ),
                   // Layer 5: Outer ring floating devices (config/baseline)

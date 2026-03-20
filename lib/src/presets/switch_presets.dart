@@ -19,6 +19,8 @@ class SwitchUD1U6P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 6,
+          imageOffsetX: -8,
+          imageOffsetY: -10,
         );
 }
 
@@ -41,6 +43,8 @@ class SwitchUD1U8P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 8,
+          imageOffsetX: -8,
+          imageOffsetY: -10,
         );
 }
 
@@ -65,6 +69,8 @@ class SwitchUD1U10P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 10,
+          imageOffsetX: -8,
+          imageOffsetY: -10,
         );
 }
 
@@ -91,6 +97,8 @@ class SwitchUD1U12P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 12,
+          imageOffsetX: -9,
+          imageOffsetY: -10,
         );
 }
 
@@ -119,6 +127,8 @@ class SwitchUD1U14P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 14,
+          imageOffsetX: -9,
+          imageOffsetY: -10,
         );
 }
 
@@ -149,6 +159,8 @@ class SwitchUD1U16P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 16,
+          imageOffsetX: -10,
+          imageOffsetY: -10,
         );
 }
 
@@ -181,6 +193,8 @@ class SwitchUD1U18P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 18,
+          imageOffsetX: -10,
+          imageOffsetY: -10,
         );
 }
 
@@ -215,6 +229,8 @@ class SwitchUD1U20P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 20,
+          imageOffsetX: -11,
+          imageOffsetY: -10,
         );
 }
 
@@ -251,6 +267,8 @@ class SwitchUD1U22P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 22,
+          imageOffsetX: -11,
+          imageOffsetY: -10,
         );
 }
 
@@ -289,6 +307,8 @@ class SwitchUD1U24P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 24,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 
@@ -329,6 +349,8 @@ class SwitchUD1U26P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 26,
+          imageOffsetX: -13,
+          imageOffsetY: -10,
         );
 }
 
@@ -371,6 +393,8 @@ class SwitchUD1U28P extends SwitchDeviceFormat {
           hSizeFactor: 0.15,
           wSizeFactor: 1,
           totalPortsNum: 28,
+          imageOffsetX: -15,
+          imageOffsetY: -10,
         );
 }
 
@@ -444,6 +468,8 @@ class SwitchUD1U30PStacked extends SwitchDeviceFormat {
           totalPortsNum: 48,
           validPortsNum: 30,
           isStacked: true,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 
@@ -458,6 +484,8 @@ class SwitchUD1U32PStacked extends SwitchDeviceFormat {
           totalPortsNum: 48,
           validPortsNum: 32,
           isStacked: true,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 
@@ -472,6 +500,8 @@ class SwitchUD1U34PStacked extends SwitchDeviceFormat {
           totalPortsNum: 48,
           validPortsNum: 34,
           isStacked: true,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 
@@ -486,6 +516,8 @@ class SwitchUD1U36PStacked extends SwitchDeviceFormat {
           totalPortsNum: 48,
           validPortsNum: 36,
           isStacked: true,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 
@@ -500,6 +532,8 @@ class SwitchUD1U38PStacked extends SwitchDeviceFormat {
           totalPortsNum: 48,
           validPortsNum: 38,
           isStacked: true,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 
@@ -514,6 +548,8 @@ class SwitchUD1U40PStacked extends SwitchDeviceFormat {
           totalPortsNum: 48,
           validPortsNum: 40,
           isStacked: true,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 
@@ -528,6 +564,8 @@ class SwitchUD1U42PStacked extends SwitchDeviceFormat {
           totalPortsNum: 48,
           validPortsNum: 42,
           isStacked: true,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 
@@ -542,6 +580,8 @@ class SwitchUD1U44PStacked extends SwitchDeviceFormat {
           totalPortsNum: 48,
           validPortsNum: 44,
           isStacked: true,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 
@@ -556,6 +596,8 @@ class SwitchUD1U46PStacked extends SwitchDeviceFormat {
           totalPortsNum: 48,
           validPortsNum: 46,
           isStacked: true,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 
@@ -570,6 +612,8 @@ class SwitchUD1U48PStacked extends SwitchDeviceFormat {
           totalPortsNum: 48,
           validPortsNum: 48,
           isStacked: true,
+          imageOffsetX: -12,
+          imageOffsetY: -10,
         );
 }
 

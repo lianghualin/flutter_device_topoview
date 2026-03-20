@@ -216,8 +216,8 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
     final fmt = widget.format;
 
     return Positioned(
-      left: pos.dx + size * (1 - fmt.wSizeFactor),
-      top: pos.dy + size * fmt.hSizeFactor,
+      left: pos.dx + size * (1 - fmt.wSizeFactor) + fmt.imageOffsetX,
+      top: pos.dy + size * fmt.hSizeFactor + fmt.imageOffsetY,
       child: MouseRegion(
         onEnter: (_) => widget.onSwitchHover?.call(),
         onExit: (_) => widget.onSwitchHoverExit?.call(),

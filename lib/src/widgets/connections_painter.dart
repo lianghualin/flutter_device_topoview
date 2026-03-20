@@ -6,12 +6,14 @@ class ConnectionsPainter extends CustomPainter {
   final double animationValue;
   final int? activePortNumber;
   final double dashFlowValue;
+  final bool dimOnly;
 
   ConnectionsPainter({
     required this.connections,
     this.animationValue = 0.0,
     this.activePortNumber,
     this.dashFlowValue = 0.0,
+    this.dimOnly = false,
   });
 
   @override
@@ -28,7 +30,7 @@ class ConnectionsPainter extends CustomPainter {
             null, Paint()..color = Colors.white.withValues(alpha: 0.1));
         connection.paint(canvas, animationValue: animationValue);
         canvas.restore();
-      } else if (isActive) {
+      } else if (isActive && !dimOnly) {
         // Spotlight: paint with flowing dash animation
         connection.paintSpotlit(canvas, dashFlowValue: dashFlowValue);
       } else {
@@ -43,7 +45,8 @@ class ConnectionsPainter extends CustomPainter {
     return oldDelegate.connections != connections ||
         oldDelegate.animationValue != animationValue ||
         oldDelegate.activePortNumber != activePortNumber ||
-        oldDelegate.dashFlowValue != dashFlowValue;
+        oldDelegate.dashFlowValue != dashFlowValue ||
+        oldDelegate.dimOnly != dimOnly;
   }
 }
 
@@ -52,6 +55,7 @@ class ConnectionsLayer extends StatelessWidget {
   final double animationValue;
   final int? activePortNumber;
   final double dashFlowValue;
+  final bool dimOnly;
 
   const ConnectionsLayer({
     super.key,
@@ -59,6 +63,7 @@ class ConnectionsLayer extends StatelessWidget {
     this.animationValue = 0.0,
     this.activePortNumber,
     this.dashFlowValue = 0.0,
+    this.dimOnly = false,
   });
 
   @override
@@ -69,6 +74,7 @@ class ConnectionsLayer extends StatelessWidget {
         animationValue: animationValue,
         activePortNumber: activePortNumber,
         dashFlowValue: dashFlowValue,
+        dimOnly: dimOnly,
       ),
     );
   }

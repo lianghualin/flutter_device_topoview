@@ -29,6 +29,9 @@ class _AppState extends State<App> {
   int _stackedPart = 0;
   List<String> _eventLog = [];
 
+  bool _imageOffsetEnabled = false;
+  double _imageOffsetX = 0.0;
+  double _imageOffsetY = 0.0;
   int _topologyKey = 0;
 
   Scenario get _currentScenario => allScenarios[_currentScenarioIndex];
@@ -205,6 +208,33 @@ class _AppState extends State<App> {
     });
   }
 
+  DeviceFormat _applyImageOffset(DeviceFormat format) {
+    if (!_imageOffsetEnabled) return format;
+    if (format is SwitchDeviceFormat) {
+      return SwitchDeviceFormat(
+        imgPath: format.imgPath,
+        evenPortOffsetR: format.evenPortOffsetR,
+        oddPortOffsetR: format.oddPortOffsetR,
+        totalPortsNum: format.totalPortsNum,
+        validPortsNum: format.validPortsNum,
+        isStacked: format.isStacked,
+        minWidth: format.minWidth,
+        minHeight: format.minHeight,
+        hSizeFactor: format.hSizeFactor,
+        wSizeFactor: format.wSizeFactor,
+        imageOffsetX: _imageOffsetX,
+        imageOffsetY: _imageOffsetY,
+      );
+    }
+    return SimpleDeviceFormat(
+      imgPath: format.imgPath,
+      hSizeFactor: format.hSizeFactor,
+      wSizeFactor: format.wSizeFactor,
+      imageOffsetX: _imageOffsetX,
+      imageOffsetY: _imageOffsetY,
+    );
+  }
+
   void _handleStackedPartFromPanel(int part) {
     setState(() {
       _stackedPart = part;
@@ -260,11 +290,13 @@ class _AppState extends State<App> {
           Positioned.fill(
             child: LayoutBuilder(
               builder: (context, constraints) {
+                // Apply image offset to format
+                final adjustedFormat = _applyImageOffset(scenario.format);
                 return DeviceTopologyView(
                   key: ValueKey(_topologyKey),
                   size: Size(constraints.maxWidth, constraints.maxHeight),
                   deviceType: scenario.deviceType,
-                  format: scenario.format,
+                  format: adjustedFormat,
                   portDevices: _portDevices,
                   portStatusMap: _portStatusMap,
                   centerLabel: scenario.centerLabel,
@@ -319,6 +351,12 @@ class _AppState extends State<App> {
               isStacked: isStacked,
               stackedPart: _stackedPart,
               onStackedPartChanged: _handleStackedPartFromPanel,
+              imageOffsetEnabled: _imageOffsetEnabled,
+              onImageOffsetEnabledChanged: (v) => setState(() { _imageOffsetEnabled = v; _topologyKey++; }),
+              imageOffsetX: _imageOffsetX,
+              imageOffsetY: _imageOffsetY,
+              onImageOffsetXChanged: (v) => setState(() { _imageOffsetX = v; _topologyKey++; }),
+              onImageOffsetYChanged: (v) => setState(() { _imageOffsetY = v; _topologyKey++; }),
             ),
           ),
         ],

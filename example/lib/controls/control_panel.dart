@@ -31,6 +31,12 @@ class ControlPanel extends StatelessWidget {
     this.onEnableAnimationsChanged,
     this.fullMismatch = false,
     this.onFullMismatchChanged,
+    this.imageOffsetEnabled = false,
+    this.onImageOffsetEnabledChanged,
+    this.imageOffsetX = 0.0,
+    this.imageOffsetY = 0.0,
+    this.onImageOffsetXChanged,
+    this.onImageOffsetYChanged,
     super.key,
   });
 
@@ -40,6 +46,12 @@ class ControlPanel extends StatelessWidget {
   final ValueChanged<bool>? onEnableAnimationsChanged;
   final bool fullMismatch;
   final ValueChanged<bool>? onFullMismatchChanged;
+  final bool imageOffsetEnabled;
+  final ValueChanged<bool>? onImageOffsetEnabledChanged;
+  final double imageOffsetX;
+  final double imageOffsetY;
+  final ValueChanged<double>? onImageOffsetXChanged;
+  final ValueChanged<double>? onImageOffsetYChanged;
   final VoidCallback onRandomize;
   final int deviceCount;
   final int maxDevices;
@@ -134,6 +146,28 @@ class ControlPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
 
+                  SwitchListTile(
+                    title: const Text('Image Offset'),
+                    subtitle: const Text('Adjust switch image position'),
+                    value: imageOffsetEnabled,
+                    onChanged: onImageOffsetEnabledChanged,
+                    dense: true,
+                  ),
+                  if (imageOffsetEnabled) ...[
+                    _NumberField(
+                      label: 'X',
+                      value: imageOffsetX,
+                      onChanged: onImageOffsetXChanged,
+                    ),
+                    const SizedBox(height: 4),
+                    _NumberField(
+                      label: 'Y',
+                      value: imageOffsetY,
+                      onChanged: onImageOffsetYChanged,
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+
                   _SectionHeader(title: 'Port Statuses'),
                   ElevatedButton.icon(
                     onPressed: onRandomize,
@@ -168,7 +202,7 @@ class ControlPanel extends StatelessWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  _SectionHeader(title: 'Explore Devices'),
+                  _SectionHeader(title: 'Outer Circle (Config)'),
                   Row(
                     children: [
                       Expanded(
@@ -227,7 +261,7 @@ class ControlPanel extends StatelessWidget {
                               title: Text(dev.deviceName,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontSize: 13)),
-                              subtitle: Text('Baseline (${dev.deviceType})',
+                              subtitle: Text('Inner — real (${dev.deviceType})',
                                   style: const TextStyle(fontSize: 11)),
                               value: baselineConnected.contains(i),
                               onChanged: (v) => onBaselineToggled(i, v),
@@ -239,7 +273,7 @@ class ControlPanel extends StatelessWidget {
                                 title: Text(dev.exploreDevName!,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(fontSize: 13)),
-                                subtitle: const Text('Explore',
+                                subtitle: const Text('Outer — config',
                                     style: TextStyle(fontSize: 11)),
                                 value: exploreConnected.contains(i),
                                 onChanged: (v) => onExploreToggled(i, v),
@@ -266,6 +300,70 @@ class ControlPanel extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _NumberField extends StatefulWidget {
+  const _NumberField({
+    required this.label,
+    required this.value,
+    this.onChanged,
+  });
+  final String label;
+  final double value;
+  final ValueChanged<double>? onChanged;
+
+  @override
+  State<_NumberField> createState() => _NumberFieldState();
+}
+
+class _NumberFieldState extends State<_NumberField> {
+  late TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value.toStringAsFixed(1));
+  }
+
+  @override
+  void didUpdateWidget(_NumberField old) {
+    super.didUpdateWidget(old);
+    final current = double.tryParse(_controller.text) ?? 0.0;
+    if ((current - widget.value).abs() > 0.01) {
+      _controller.text = widget.value.toStringAsFixed(1);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(width: 24, child: Text(widget.label, style: const TextStyle(fontWeight: FontWeight.w600))),
+        Expanded(
+          child: TextField(
+            controller: _controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              border: OutlineInputBorder(),
+            ),
+            style: const TextStyle(fontSize: 13),
+            onSubmitted: (text) {
+              final v = double.tryParse(text);
+              if (v != null) widget.onChanged?.call(v);
+            },
+          ),
+        ),
+      ],
     );
   }
 }
