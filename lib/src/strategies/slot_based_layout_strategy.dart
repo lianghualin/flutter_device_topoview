@@ -32,6 +32,12 @@ abstract class SlotBasedLayoutStrategy extends DeviceLayoutStrategy {
           ? dev.deviceName
           : (dev.deviceIp ?? '');
 
+      // If baseline == explore, this is a verified real device — show ring
+      final bool isVerified =
+          dev.deviceName == dev.exploreDevName &&
+          dev.deviceIp == dev.exploreDevIp &&
+          (dev.exploreDevName != null && dev.exploreDevName!.isNotEmpty);
+
       result.add(SwitchDevFloat(
         position: pd.position,
         label: label,
@@ -41,6 +47,9 @@ abstract class SlotBasedLayoutStrategy extends DeviceLayoutStrategy {
         deviceStatus: dev.deviceStatus,
         deviceIp: dev.deviceIp,
         portId: dev.portId,
+        inboundUtilization: isVerified ? dev.exploreInboundUtilization : null,
+        outboundUtilization: isVerified ? dev.exploreOutboundUtilization : null,
+        isRealDevice: isVerified,
       ));
     }
 
