@@ -29,6 +29,7 @@ class DeviceTopologyView extends StatefulWidget {
     this.initialStackedSwitchPart,
     this.onStackedSwitchPartChanged,
     this.enableAnimations = true,
+    this.showOuterRing = true,
     super.key,
   });
 
@@ -44,6 +45,7 @@ class DeviceTopologyView extends StatefulWidget {
   final int? initialStackedSwitchPart;
   final void Function(int part)? onStackedSwitchPartChanged;
   final bool enableAnimations;
+  final bool showOuterRing;
 
   @override
   State<DeviceTopologyView> createState() => _DeviceTopologyViewState();
@@ -94,9 +96,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    if (widget.enableAnimations) {
-      _dashFlowController.repeat();
-    }
+    // Don't start yet — only runs when spotlight is active
     _stackedSwitchSelectedPart = widget.initialStackedSwitchPart ?? 0;
     _createStrategy();
     _initializeLayout();
@@ -121,12 +121,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
       _initializeLayout();
     }
     if (widget.enableAnimations != oldWidget.enableAnimations) {
-      if (widget.enableAnimations) {
-        _dashFlowController.repeat();
-      } else {
-        _dashFlowController.stop();
-        _dashFlowController.value = 0;
-      }
+      _updateDashFlow();
     }
   }
 
@@ -191,8 +186,14 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
     // Step 5: Generate connection lines
     _baseConnections =
         _strategy.generateConnections(_ports, _baseDevices, widget.portDevices);
-    _exploreConnections = _strategy.generateExploreConnections(
-        _ports, _exploreDevices, widget.portDevices);
+    if (widget.isConfig) {
+      // Config mode: no explore data, only baseline
+      _exploreConnections = [];
+      _exploreDevices = [];
+    } else {
+      _exploreConnections = _strategy.generateExploreConnections(
+          _ports, _exploreDevices, widget.portDevices);
+    }
 
     // Debug: print all element positions
     debugPrint('=== LAYOUT DEBUG ===');
@@ -415,13 +416,29 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         }
       }
       _updateHighlightStates();
+      _updateDashFlow();
     });
+  }
+
+  /// Start or stop the dash flow animation based on spotlight state.
+  void _updateDashFlow() {
+    if (widget.enableAnimations && _switchActivePort != null && _switchActivePort != -1) {
+      if (!_dashFlowController.isAnimating) {
+        _dashFlowController.repeat();
+      }
+    } else {
+      if (_dashFlowController.isAnimating) {
+        _dashFlowController.stop();
+        _dashFlowController.value = 0;
+      }
+    }
   }
 
   void _handlePortHover(int portNum) {
     setState(() {
       _hoveredPortNumber = portNum;
       _updateHighlightStates();
+      _updateDashFlow();
     });
   }
 
@@ -429,12 +446,14 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
     setState(() {
       _hoveredPortNumber = null;
       _updateHighlightStates();
+      _updateDashFlow();
     });
   }
 
   void _handleSwitchHover() {
     setState(() {
       _isHoveringSwitch = true;
+      _updateDashFlow();
     });
   }
 
@@ -443,6 +462,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
       _isHoveringSwitch = false;
       _hoveredPortNumber = null;
       _updateHighlightStates();
+      _updateDashFlow();
     });
   }
 
@@ -455,6 +475,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         _selectedDeviceId = deviceId;
       }
       _updateHighlightStates();
+      _updateDashFlow();
     });
   }
 
@@ -465,6 +486,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
       _selectedDeviceId = null;
       _isHoveringSwitch = false;
       _updateHighlightStates();
+      _updateDashFlow();
     });
   }
 
@@ -476,6 +498,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         _selectedDeviceId = deviceToKeepHighlighted;
       }
       _updateHighlightStates();
+      _updateDashFlow();
     });
   }
 
@@ -537,25 +560,27 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                     activePortNumber: _switchActivePort,
                     enableAnimations: widget.enableAnimations,
                   ),
-                  // Layer 4: Baseline connections
-                  AnimatedBuilder(
-                    animation: _dashFlowController,
-                    builder: (context, _) => ConnectionsLayer(
-                      connections: _baseConnections,
-                      activePortNumber: _switchActivePort,
-                      dashFlowValue: widget.enableAnimations ? _dashFlowController.value : 0,
+                  // Layer 4: Outer ring connections (config/baseline)
+                  if (widget.showOuterRing)
+                    AnimatedBuilder(
+                      animation: _dashFlowController,
+                      builder: (context, _) => ConnectionsLayer(
+                        connections: _baseConnections,
+                        activePortNumber: _switchActivePort,
+                        dashFlowValue: widget.enableAnimations ? _dashFlowController.value : 0,
+                      ),
                     ),
-                  ),
-                  // Layer 5: Baseline floating devices
-                  DevLayer(
-                    devices: _baseDevices,
-                    selectedDeviceId: _selectedDeviceId,
-                    onDeviceSelected: _handleDeviceSelected,
-                    onClearPortHighlight: _handleClearPortHighlight,
-                    onExternalDeviceSelected: widget.onDeviceSelected,
-                    activePortNumber: _switchActivePort,
-                    enableAnimations: widget.enableAnimations,
-                  ),
+                  // Layer 5: Outer ring floating devices (config/baseline)
+                  if (widget.showOuterRing)
+                    DevLayer(
+                      devices: _baseDevices,
+                      selectedDeviceId: _selectedDeviceId,
+                      onDeviceSelected: _handleDeviceSelected,
+                      onClearPortHighlight: _handleClearPortHighlight,
+                      onExternalDeviceSelected: widget.onDeviceSelected,
+                      activePortNumber: _switchActivePort,
+                      enableAnimations: widget.enableAnimations,
+                    ),
                   // Layer 6: Ports
                   PortLayer(
                     ports: _ports,

@@ -56,11 +56,7 @@ class ConnectionLine {
       paint
         ..color = Colors.grey
         ..strokeWidth = isHighlighted ? 4 : 2;
-      if (status == 0) {
-        _drawDashedPath(canvas, path, paint);
-      } else {
-        canvas.drawPath(path, paint);
-      }
+      _drawDashedPath(canvas, path, paint);
       return;
     }
 

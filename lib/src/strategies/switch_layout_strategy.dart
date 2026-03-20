@@ -608,7 +608,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
         status: device.portstatus,
         portNumber: matchedPort.portNumber,
         isConfig: isConfig,
-        forceCurve: true, // outer ring lines are always curved
+        forceCurve: !isConfig, // straight lines in config mode
       ));
     }
 
