@@ -566,7 +566,6 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       animation: _dashFlowController,
                       builder: (context, _) => ConnectionsLayer(
                         connections: _baseConnections,
-                        activePortNumber: _switchActivePort,
                         dashFlowValue: widget.enableAnimations ? _dashFlowController.value : 0,
                       ),
                     ),

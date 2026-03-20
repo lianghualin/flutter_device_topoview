@@ -91,6 +91,18 @@ class ConnectionLine {
 
   /// Paint with spotlight effect: flowing dashes and glow.
   void paintSpotlit(Canvas canvas, {double dashFlowValue = 0.0}) {
+    // Config mode: stay grey dashed, no glow
+    if (isConfig) {
+      final greyPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = Colors.grey;
+      Path greyPath = Path();
+      greyPath.moveTo(sourceOffset.dx, sourceOffset.dy);
+      greyPath.lineTo(targetOffset.dx, targetOffset.dy);
+      _drawDashedPath(canvas, greyPath, greyPaint);
+      return;
+    }
     final Color lineColor = status == -1 ? Colors.red : Colors.green;
     final paint = Paint()
       ..style = PaintingStyle.stroke
