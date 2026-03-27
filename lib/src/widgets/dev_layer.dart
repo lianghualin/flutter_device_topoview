@@ -50,7 +50,7 @@ class _DevLayerState extends State<DevLayer> {
             onDeviceTapped: widget.onExternalDeviceSelected,
             dimOpacity: active == null
                 ? null
-                : device.connectedPortNum == active
+                : device.isHighlighted
                     ? 1.0
                     : 0.15,
             enableAnimations: widget.enableAnimations,

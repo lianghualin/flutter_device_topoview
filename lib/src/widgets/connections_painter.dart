@@ -20,8 +20,8 @@ class ConnectionsPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.save();
     for (final connection in connections) {
-      final bool isActive = activePortNumber != null &&
-          connection.portNumber == activePortNumber;
+      final bool isActive =
+          activePortNumber != null && connection.isHighlighted;
       final bool isDimmed = activePortNumber != null && !isActive;
 
       if (isDimmed) {

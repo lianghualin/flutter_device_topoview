@@ -77,9 +77,8 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   double _contentHeight = 0;
 
   // Switch-specific state
-  int? _selectedDeviceId;
   int _stackedSwitchSelectedPart = 0;
-  int? _selectedPortNumber;
+  Set<int> _selectedPorts = {};
   int? _hoveredPortNumber;
   bool _isHoveringSwitch = false;
 
@@ -89,7 +88,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   /// Returns null when not hovering switch (no dimming).
   int? get _switchActivePort {
     if (widget.deviceType != DeviceType.switch_) return null;
-    if (_selectedPortNumber != null) return _selectedPortNumber;
+    if (_selectedPorts.isNotEmpty) return _selectedPorts.first; // spotlight active
     if (_hoveredPortNumber != null) return _hoveredPortNumber;
     if (_isHoveringSwitch) return -1; // sentinel: dim everything
     return null;
@@ -326,31 +325,50 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
               forceCurve: c.forceCurve,
             ))
         .toList();
+    _exploreConnections = _exploreConnections
+        .map((c) => ConnectionLine(
+              sourceOffset: c.sourceOffset,
+              targetOffset: c.targetOffset,
+              status: c.status,
+              isHighlighted: false,
+              slotId: c.slotId,
+              portNumber: c.portNumber,
+              isConfig: c.isConfig,
+              curveDirection: c.curveDirection,
+              forceCurve: c.forceCurve,
+            ))
+        .toList();
 
     // Reset all devices to non-highlighted
     for (final device in _baseDevices) {
       device.isHighlighted = false;
     }
+    for (final device in _exploreDevices) {
+      device.isHighlighted = false;
+    }
 
-    // Determine the active port (selected takes priority over hovered)
-    final int? activePort = _selectedPortNumber ?? _hoveredPortNumber;
+    // Collect all active ports: selected ports + hovered port
+    final Set<int> activePorts = {..._selectedPorts};
+    if (_hoveredPortNumber != null) {
+      activePorts.add(_hoveredPortNumber!);
+    }
 
-    if (activePort != null) {
-      // Highlight the matching port
+    if (activePorts.isNotEmpty) {
+      // Highlight matching ports
       _ports = _ports.map((p) {
-        if (p.portNumber == activePort) {
+        if (activePorts.contains(p.portNumber)) {
           return p.copyWith(
-            isSelected: _selectedPortNumber == activePort,
-            isHovered: _hoveredPortNumber == activePort &&
-                _selectedPortNumber != activePort,
+            isSelected: _selectedPorts.contains(p.portNumber),
+            isHovered: _hoveredPortNumber == p.portNumber &&
+                !_selectedPorts.contains(p.portNumber),
           );
         }
         return p;
       }).toList();
 
-      // Highlight the matching connection
+      // Highlight matching connections (baseline)
       _baseConnections = _baseConnections.map((c) {
-        if (c.portNumber == activePort) {
+        if (activePorts.contains(c.portNumber)) {
           return ConnectionLine(
             sourceOffset: c.sourceOffset,
             targetOffset: c.targetOffset,
@@ -366,34 +384,35 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         return c;
       }).toList();
 
-      // Highlight the matching device
+      // Highlight matching connections (explore)
+      _exploreConnections = _exploreConnections.map((c) {
+        if (activePorts.contains(c.portNumber)) {
+          return ConnectionLine(
+            sourceOffset: c.sourceOffset,
+            targetOffset: c.targetOffset,
+            status: c.status,
+            isHighlighted: true,
+            slotId: c.slotId,
+            portNumber: c.portNumber,
+            isConfig: c.isConfig,
+            curveDirection: c.curveDirection,
+            forceCurve: c.forceCurve,
+          );
+        }
+        return c;
+      }).toList();
+
+      // Highlight matching devices (baseline)
       for (final device in _baseDevices) {
-        if (device.connectedPortNum == activePort) {
+        if (activePorts.contains(device.connectedPortNum)) {
           device.isHighlighted = true;
         }
       }
-    } else if (_selectedDeviceId != null) {
-      // If no active port but a device is selected, highlight its connection
-      for (final device in _baseDevices) {
-        if (device.deviceId == _selectedDeviceId) {
+
+      // Highlight matching devices (explore)
+      for (final device in _exploreDevices) {
+        if (activePorts.contains(device.connectedPortNum)) {
           device.isHighlighted = true;
-          // Also highlight the connection to this device
-          _baseConnections = _baseConnections.map((c) {
-            if (c.portNumber == device.connectedPortNum) {
-              return ConnectionLine(
-                sourceOffset: c.sourceOffset,
-                targetOffset: c.targetOffset,
-                status: c.status,
-                isHighlighted: true,
-                slotId: c.slotId,
-                portNumber: c.portNumber,
-                isConfig: c.isConfig,
-                curveDirection: c.curveDirection,
-                forceCurve: c.forceCurve,
-              );
-            }
-            return c;
-          }).toList();
         }
       }
     }
@@ -414,11 +433,11 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
 
   void _handlePortTap(int portNum) {
     setState(() {
-      // Toggle: if already selected, deselect; otherwise select
-      if (_selectedPortNumber == portNum) {
-        _selectedPortNumber = null;
+      // Toggle: if already selected, deselect; otherwise add to selection
+      if (_selectedPorts.contains(portNum)) {
+        _selectedPorts.remove(portNum);
       } else {
-        _selectedPortNumber = portNum;
+        _selectedPorts.add(portNum);
 
         // For stacked switches: auto-switch to the correct part
         if (widget.format is SwitchFormat) {
@@ -488,12 +507,20 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
 
   void _handleDeviceSelected(int deviceId) {
     setState(() {
-      // Toggle: if already selected, deselect; otherwise select
-      if (_selectedDeviceId == deviceId) {
-        _selectedDeviceId = null;
-      } else {
-        _selectedDeviceId = deviceId;
+      // Find the port number connected to this device
+      final device = [..._baseDevices, ..._exploreDevices]
+          .where((d) => d.deviceId == deviceId)
+          .firstOrNull;
+
+      if (device != null) {
+        final portNum = device.connectedPortNum;
+        if (_selectedPorts.contains(portNum)) {
+          _selectedPorts.remove(portNum);
+        } else {
+          _selectedPorts.add(portNum);
+        }
       }
+
       _updateHighlightStates();
       _updateDashFlow();
     });
@@ -501,9 +528,8 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
 
   void _handleTapBlank() {
     setState(() {
-      _selectedPortNumber = null;
+      _selectedPorts.clear();
       _hoveredPortNumber = null;
-      _selectedDeviceId = null;
       _isHoveringSwitch = false;
       _updateHighlightStates();
       _updateDashFlow();
@@ -512,10 +538,11 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
 
   void _handleClearPortHighlight({int? deviceToKeepHighlighted}) {
     setState(() {
-      _selectedPortNumber = null;
+      _selectedPorts.clear();
       _hoveredPortNumber = null;
       if (deviceToKeepHighlighted != null) {
-        _selectedDeviceId = deviceToKeepHighlighted;
+        // Device ID is the same as connectedPortNum, so add it as a selected port
+        _selectedPorts.add(deviceToKeepHighlighted);
       }
       _updateHighlightStates();
       _updateDashFlow();
@@ -630,9 +657,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       onSwitchHoverExit: _handleSwitchHoverExit,
                       stackedPart: _stackedSwitchSelectedPart,
                       onStackedPartChanged: _handleStackedPartChanged,
-                      selectedPorts: _selectedPortNumber != null
-                          ? {_selectedPortNumber!}
-                          : const {},
+                      selectedPorts: _selectedPorts,
                     )
                   else if (widget.deviceType == DeviceType.host)
                     HostDeviceView(
@@ -688,7 +713,6 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                   if (widget.showOuterRing)
                     DevLayer(
                       devices: _baseDevices,
-                      selectedDeviceId: _selectedDeviceId,
                       onDeviceSelected: _handleDeviceSelected,
                       onClearPortHighlight: _handleClearPortHighlight,
                       onExternalDeviceSelected: widget.onDeviceSelected,
