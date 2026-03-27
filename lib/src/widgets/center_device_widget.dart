@@ -1,11 +1,10 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:topology_view_icons/topology_view_icons.dart';
 
 import '../models/device_format.dart';
 import '../models/device_type.dart';
-import 'svg_widget.dart';
 
 // ---------------------------------------------------------------------------
 // Layout descriptor for center device positioning
@@ -107,26 +106,11 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
             Container(
               width: size,
               alignment: Alignment.center,
-              child: SimpleShadow(
-                sigma: 10 / 2,
-                offset: const Offset(5 / 4, 5 / 4),
-                child: SvgPicture.asset(
-                  fmt.imgPath,
-                  package: 'device_topology_view',
-                  width: size,
-                  height: size,
-                  placeholderBuilder: (BuildContext context) => Container(
-                    width: size,
-                    height: size,
-                    color: Colors.white,
-                    child: Center(
-                      child: Icon(
-                        Icons.computer,
-                        size: size * 0.5,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ),
+              child: CustomPaint(
+                size: Size(size, size),
+                painter: TopoIconPainter(
+                  deviceType: TopoDeviceType.host,
+                  style: TopoIconStyle.lnm,
                 ),
               ),
             ),
@@ -185,14 +169,11 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SimpleShadow(
-              sigma: 10 / 2,
-              offset: const Offset(5 / 4, 5 / 4),
-              child: SvgPicture.asset(
-                fmt.imgPath,
-                package: 'device_topology_view',
-                width: size,
-                height: size,
+            CustomPaint(
+              size: Size(size, size),
+              painter: TopoIconPainter(
+                deviceType: TopoDeviceType.agent,
+                style: TopoIconStyle.lnm,
               ),
             ),
             Text(
@@ -224,9 +205,12 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
         child: SizedBox(
           width: size * fmt.wSizeFactor,
           height: size * fmt.hSizeFactor,
-          child: SvgClip(
-            path: fmt.imgPath,
-            elevation: 5,
+          child: CustomPaint(
+            size: Size(size * fmt.wSizeFactor, size * fmt.hSizeFactor),
+            painter: TopoIconPainter(
+              deviceType: TopoDeviceType.switch_,
+              style: TopoIconStyle.lnm,
+            ),
           ),
         ),
       ),
@@ -282,9 +266,12 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
                 child: SizedBox(
                   width: switchWidth,
                   height: switchHeight,
-                  child: SvgClip(
-                    path: fmt.imgPath,
-                    elevation: 5,
+                  child: CustomPaint(
+                    size: Size(switchWidth, switchHeight),
+                    painter: TopoIconPainter(
+                      deviceType: TopoDeviceType.switch_,
+                      style: TopoIconStyle.lnm,
+                    ),
                   ),
                 ),
               ),
@@ -309,9 +296,12 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
                 child: SizedBox(
                   width: switchWidth,
                   height: switchHeight,
-                  child: SvgClip(
-                    path: fmt.imgPath,
-                    elevation: 5,
+                  child: CustomPaint(
+                    size: Size(switchWidth, switchHeight),
+                    painter: TopoIconPainter(
+                      deviceType: TopoDeviceType.switch_,
+                      style: TopoIconStyle.lnm,
+                    ),
                   ),
                 ),
               ),
