@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:topology_view_icons/topology_view_icons.dart';
 import 'dev_float.dart';
 
 class AgentDevFloat extends DevFloat {
@@ -97,9 +97,13 @@ class AgentDevFloatWidget extends DevFloatWidget {
 class _AgentDevFloatWidgetState extends DevFloatWidgetState<AgentDevFloatWidget> {
   @override
   Widget buildCompactIcon(double animationValue) {
-    return SvgPicture.asset(
-      'assets/images/dpu_float.svg',
-      package: 'device_topology_view',
+    return SizedBox.expand(
+      child: CustomPaint(
+        painter: TopoIconPainter(
+          deviceType: TopoDeviceType.agent,
+          style: TopoIconStyle.lnm,
+        ),
+      ),
     );
   }
 
@@ -119,14 +123,11 @@ class _AgentDevFloatWidgetState extends DevFloatWidgetState<AgentDevFloatWidget>
       child: Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: Center(
-          child: PhysicalModel(
-            color: Colors.transparent,
-            elevation: 2 + animationValue * 5,
-            child: SvgPicture.asset(
-              'assets/images/dpu_float.svg',
-              package: 'device_topology_view',
-              width: widget.size,
-              height: widget.size,
+          child: CustomPaint(
+            size: Size(widget.size, widget.size),
+            painter: TopoIconPainter(
+              deviceType: TopoDeviceType.agent,
+              style: TopoIconStyle.lnm,
             ),
           ),
         ),
