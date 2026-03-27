@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:topology_view_icons/topology_view_icons.dart';
 
 import '../models/port.dart';
 
@@ -76,41 +76,22 @@ class _PortWidgetState extends State<PortWidget>
     final bool isEven =
         widget.port.portNumber != null && widget.port.portNumber! % 2 == 0;
 
-    // Determine SVG path based on config / invalid / status
-    String svgPath;
+    // Determine painter parameters based on config / invalid / status
+    final bool isDisabled =
+        widget.port.isInvalid || (!widget.isConfig && widget.port.isUp == null);
+    final bool isUp = !widget.port.isInvalid &&
+        !widget.isConfig &&
+        widget.port.isUp == true;
+    final PortDirection direction =
+        isEven ? PortDirection.down : PortDirection.up;
 
-    if (widget.port.isInvalid) {
-      svgPath = isEven
-          ? 'assets/images/port_down_black.svg'
-          : 'assets/images/port_up_black.svg';
-    } else if (widget.isConfig) {
-      svgPath = isEven
-          ? 'assets/images/port_down_grey.svg'
-          : 'assets/images/port_up_grey.svg';
-    } else {
-      if (isEven) {
-        if (widget.port.isUp == true) {
-          svgPath = 'assets/images/port_down_green.svg';
-        } else if (widget.port.isUp == false) {
-          svgPath = 'assets/images/port_down_grey.svg';
-        } else {
-          svgPath = 'assets/images/port_down_black.svg';
-        }
-      } else {
-        if (widget.port.isUp == true) {
-          svgPath = 'assets/images/port_up_green.svg';
-        } else if (widget.port.isUp == false) {
-          svgPath = 'assets/images/port_up_grey.svg';
-        } else {
-          svgPath = 'assets/images/port_up_black.svg';
-        }
-      }
-    }
-
-    Widget svgWidget = SvgPicture.asset(
-      svgPath,
-      fit: BoxFit.contain,
-      package: 'device_topology_view',
+    Widget svgWidget = CustomPaint(
+      painter: TopoPortPainter(
+        isUp: isUp,
+        isDisabled: isDisabled,
+        style: TopoIconStyle.flat,
+        direction: direction,
+      ),
     );
 
     // Wrap in rotation transform when rotation != 0
