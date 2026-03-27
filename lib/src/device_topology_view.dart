@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_switch_device/flutter_switch_device.dart' hide PortStatus;
+import 'package:flutter_switch_device/flutter_switch_device.dart'
+    as switch_pkg show PortStatus;
 import 'models/device_type.dart';
 import 'models/port_device.dart';
 import 'models/device_format.dart';
@@ -518,6 +520,32 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   }
 
   // ---------------------------------------------------------------------------
+  // Switch port status conversion
+  // ---------------------------------------------------------------------------
+
+  /// Converts the local [PortStatus] map (String keys) to the package's
+  /// [switch_pkg.PortStatus] map (int keys) for [SwitchDeviceView].
+  Map<int, switch_pkg.PortStatus> _buildSwitchPortStatuses() {
+    final result = <int, switch_pkg.PortStatus>{};
+    for (final entry in widget.portStatusMap.entries) {
+      final portNum = int.tryParse(entry.key);
+      if (portNum == null) continue;
+      switch (entry.value) {
+        case PortStatus.up:
+          result[portNum] = switch_pkg.PortStatus.up;
+          break;
+        case PortStatus.down:
+          result[portNum] = switch_pkg.PortStatus.down;
+          break;
+        case PortStatus.unknown:
+          result[portNum] = switch_pkg.PortStatus.unknown;
+          break;
+      }
+    }
+    return result;
+  }
+
+  // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
 
@@ -544,21 +572,34 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
               height: _contentHeight,
               child: Stack(
                 children: [
-                  // Layer 1: Center device
-                  CenterDeviceLayer(
-                    layout: _centerLayout,
-                    format: widget.format,
-                    label: widget.centerLabel,
-                    deviceType: widget.deviceType,
-                    stackedSwitchPart: _stackedSwitchSelectedPart,
-                    onStackedPartChanged: _handleStackedPartChanged,
-                    onSwitchHover: widget.deviceType == DeviceType.switch_
-                        ? _handleSwitchHover
-                        : null,
-                    onSwitchHoverExit: widget.deviceType == DeviceType.switch_
-                        ? _handleSwitchHoverExit
-                        : null,
-                  ),
+                  // Layer 1: Center device (+ ports for switch mode)
+                  if (widget.deviceType == DeviceType.switch_ &&
+                      widget.format is SwitchFormat)
+                    SwitchDeviceView(
+                      size: Size(_contentWidth, _contentHeight),
+                      format: widget.format as SwitchFormat,
+                      portStatuses: _buildSwitchPortStatuses(),
+                      isConfig: widget.isConfig,
+                      onPortHover: _handlePortHover,
+                      onPortHoverExit: _handlePortHoverExit,
+                      onPortTap: _handlePortTap,
+                      onSwitchHover: _handleSwitchHover,
+                      onSwitchHoverExit: _handleSwitchHoverExit,
+                      stackedPart: _stackedSwitchSelectedPart,
+                      onStackedPartChanged: _handleStackedPartChanged,
+                      selectedPorts: _selectedPortNumber != null
+                          ? {_selectedPortNumber!}
+                          : const {},
+                    )
+                  else
+                    CenterDeviceLayer(
+                      layout: _centerLayout,
+                      format: widget.format,
+                      label: widget.centerLabel,
+                      deviceType: widget.deviceType,
+                      stackedSwitchPart: _stackedSwitchSelectedPart,
+                      onStackedPartChanged: _handleStackedPartChanged,
+                    ),
                   // Layer 2: Explore connections
                   AnimatedBuilder(
                     animation: _dashFlowController,
@@ -597,20 +638,15 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       activePortNumber: _switchActivePort,
                       enableAnimations: widget.enableAnimations,
                     ),
-                  // Layer 6: Ports
-                  PortLayer(
-                    ports: _ports,
-                    onPortHover: widget.deviceType == DeviceType.switch_
-                        ? _handlePortHover
-                        : null,
-                    onPortHoverExit: widget.deviceType == DeviceType.switch_
-                        ? _handlePortHoverExit
-                        : null,
-                    onPortTap: widget.deviceType == DeviceType.switch_
-                        ? _handlePortTap
-                        : null,
-                    isConfig: widget.isConfig,
-                  ),
+                  // Layer 6: Ports (non-switch only; SwitchDeviceView renders its own)
+                  if (widget.deviceType != DeviceType.switch_)
+                    PortLayer(
+                      ports: _ports,
+                      onPortHover: null,
+                      onPortHoverExit: null,
+                      onPortTap: null,
+                      isConfig: widget.isConfig,
+                    ),
                 ],
               ),
             ),

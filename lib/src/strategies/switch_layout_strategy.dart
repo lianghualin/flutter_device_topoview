@@ -46,6 +46,9 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
     final double contentHeight =
         viewportSize.height < _minHeight ? _minHeight : viewportSize.height;
 
+    // Cache viewport size for use by calculatePortPositions
+    _cachedViewportSize = Size(contentWidth, contentHeight);
+
     // Scale factor based on aspect ratio
     double scaleFactor = contentWidth / contentHeight;
     scaleFactor = scaleFactor.clamp(0.5, 1.0);
@@ -67,8 +70,12 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
   }
 
   // ---------------------------------------------------------------------------
-  // calculatePortPositions
+  // calculatePortPositions — delegates to SwitchDeviceView.getPortPositions()
   // ---------------------------------------------------------------------------
+
+  /// Cached viewport size from [calculateCenterLayout], used by
+  /// [calculatePortPositions] to call the package's layout engine.
+  Size _cachedViewportSize = Size.zero;
 
   @override
   List<Port> calculatePortPositions(
@@ -81,54 +88,36 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
     }
 
     final SwitchFormat switchFormat = format;
-    final int totalPorts = switchFormat.totalPortsNum;
     final int? validPortsNum = switchFormat.validPortsNum;
-    final bool isStacked =
-        switchFormat.totalPortsNum == 48 && validPortsNum != null;
 
-    // Calculate port width
-    double xSize;
-    double portWidth;
-    const double portHeight = 20;
+    // Use the package's layout engine for port center positions.
+    // The viewport size was cached during calculateCenterLayout().
+    final Map<int, Offset> portCenters = SwitchDeviceView.getPortPositions(
+      switchFormat,
+      _cachedViewportSize,
+    );
 
-    if (isStacked) {
-      const int portsPerLayer = 12;
-      xSize = center.size *
-          (switchFormat.evenPortOffsetR[portsPerLayer - 1].dx -
-              switchFormat.evenPortOffsetR[0].dx);
-      portWidth = xSize / portsPerLayer * 1.2;
-    } else {
-      xSize = center.size *
-          (switchFormat.evenPortOffsetR[totalPorts ~/ 2 - 1].dx -
-              switchFormat.evenPortOffsetR[0].dx);
-      portWidth = xSize / (totalPorts ~/ 2) * 1.2;
-    }
+    // Derive port dimensions from the package's layout engine.
+    final double cs = _packageCenterSize(switchFormat, _cachedViewportSize);
+    final double portWidth = _packagePortWidth(switchFormat, cs);
+    final double portHeight = portWidth * 0.75;
 
     final List<Port> ports = [];
 
-    for (int i = 1; i <= totalPorts; i++) {
-      final bool isEven = i % 2 == 0;
+    for (final entry in portCenters.entries) {
+      final int i = entry.key;
+      final Offset portCenter = entry.value;
       final bool isInvalid = validPortsNum != null && i > validPortsNum;
 
       // Convert port number to status map key
       final String statusKey = i.toString();
       final PortStatus? portStatus = statusMap[statusKey];
-      final bool? isUp = portStatus != null
-          ? _portStatusToBool(portStatus)
-          : null;
-
-      // Calculate position from format offsets
-      final int offsetIndex = (i - 1) ~/ 2;
-      final Offset portOffset = isEven
-          ? switchFormat.evenPortOffsetR[offsetIndex]
-          : switchFormat.oddPortOffsetR[offsetIndex];
-
-      final double portX = center.position.dx + center.size * portOffset.dx;
-      final double portY = center.position.dy + center.size * portOffset.dy;
+      final bool? isUp =
+          portStatus != null ? _portStatusToBool(portStatus) : null;
 
       // Determine opacity for stacked switch
       double opacity = 1.0;
-      if (isStacked) {
+      if (switchFormat.isStacked) {
         if (stackedSwitchSelectedPart == 1) {
           opacity = (i >= 1 && i <= 24) ? 1.0 : 0.3;
         } else if (stackedSwitchSelectedPart == 2) {
@@ -140,7 +129,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
       }
 
       ports.add(Port(
-        position: Offset(portX - portWidth / 2, portY - portHeight / 2),
+        position:
+            Offset(portCenter.dx - portWidth / 2, portCenter.dy - portHeight / 2),
         portNumber: i,
         width: portWidth,
         height: portHeight,
@@ -150,7 +140,35 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
       ));
     }
 
+    // Sort by port number for deterministic ordering
+    ports.sort((a, b) => (a.portNumber ?? 0).compareTo(b.portNumber ?? 0));
+
     return ports;
+  }
+
+  /// Mirrors the package's _centerSize calculation.
+  static double _packageCenterSize(SwitchFormat format, Size viewportSize) {
+    final scaleX = viewportSize.width / format.minWidth;
+    final scaleY = viewportSize.height / format.minHeight;
+    return 500.0 * math.min(scaleX, scaleY);
+  }
+
+  /// Mirrors the package's _computePortWidth calculation.
+  static double _packagePortWidth(SwitchFormat format, double cs) {
+    final allX = <double>[
+      for (final o in format.oddPortOffsetR) o.dx,
+      for (final o in format.evenPortOffsetR) o.dx,
+    ]..sort();
+    if (allX.length < 2) return cs * 0.04;
+    double minSpacing = double.infinity;
+    for (int i = 1; i < allX.length; i++) {
+      final spacing = allX[i] - allX[i - 1];
+      if (spacing > 0 && spacing < minSpacing) {
+        minSpacing = spacing;
+      }
+    }
+    final rawWidth = cs * minSpacing * 0.8;
+    return rawWidth.clamp(10.0, 25.0);
   }
 
   // ---------------------------------------------------------------------------
