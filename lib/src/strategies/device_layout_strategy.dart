@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/port_device.dart';
-import '../models/device_format.dart';
 import '../models/port_status.dart';
 import '../models/port.dart';
 import '../models/connection_line.dart';
@@ -36,12 +35,12 @@ class PositionedDevice {
 abstract class DeviceLayoutStrategy {
   /// Compute center device layout (position + size) from viewport.
   CenterDeviceLayout calculateCenterLayout(
-      Size viewportSize, DeviceFormat format);
+      Size viewportSize, Object format);
 
   /// Compute port positions around the center device.
   List<Port> calculatePortPositions(
     CenterDeviceLayout center,
-    DeviceFormat format,
+    Object format,
     Map<String, PortStatus> statusMap,
   );
 

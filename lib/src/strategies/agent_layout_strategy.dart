@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import '../models/port_device.dart';
-import '../models/device_format.dart';
+
 import '../models/port_status.dart';
 import '../models/port.dart';
 import '../models/connection_line.dart';
@@ -23,7 +23,7 @@ class AgentLayoutStrategy extends SlotBasedLayoutStrategy {
 
   @override
   CenterDeviceLayout calculateCenterLayout(
-      Size viewportSize, DeviceFormat format) {
+      Size viewportSize, Object format) {
     final double width = viewportSize.width;
     final double height = viewportSize.height;
 
@@ -53,7 +53,7 @@ class AgentLayoutStrategy extends SlotBasedLayoutStrategy {
   @override
   List<Port> calculatePortPositions(
     CenterDeviceLayout center,
-    DeviceFormat format,
+    Object format,
     Map<String, PortStatus> statusMap,
   ) {
     // Group ports by slotA / slotB prefix

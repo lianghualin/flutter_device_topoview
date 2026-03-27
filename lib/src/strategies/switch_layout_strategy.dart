@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_switch_device/flutter_switch_device.dart' hide PortStatus;
 import '../models/port_device.dart';
-import '../models/device_format.dart';
 import '../models/port_status.dart';
 import '../models/port.dart';
 import '../models/connection_line.dart';
@@ -17,7 +17,7 @@ import 'device_layout_strategy.dart';
 /// Layout strategy for switch topology views.
 ///
 /// This is the most complex strategy. It manages:
-/// - Port positioning from SwitchDeviceFormat templates
+/// - Port positioning from SwitchFormat templates
 /// - Device positioning (odd ports -> top, even ports -> bottom)
 /// - Stacked switch state (part selection, port filtering, opacity)
 /// - isConfig mode (filters out probed devices)
@@ -40,7 +40,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
 
   @override
   CenterDeviceLayout calculateCenterLayout(
-      Size viewportSize, DeviceFormat format) {
+      Size viewportSize, Object format) {
     final double contentWidth =
         viewportSize.width < _minWidth ? _minWidth : viewportSize.width;
     final double contentHeight =
@@ -73,14 +73,14 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
   @override
   List<Port> calculatePortPositions(
     CenterDeviceLayout center,
-    DeviceFormat format,
+    Object format,
     Map<String, PortStatus> statusMap,
   ) {
-    if (format is! SwitchDeviceFormat) {
+    if (format is! SwitchFormat) {
       return [];
     }
 
-    final SwitchDeviceFormat switchFormat = format;
+    final SwitchFormat switchFormat = format;
     final int totalPorts = switchFormat.totalPortsNum;
     final int? validPortsNum = switchFormat.validPortsNum;
     final bool isStacked =

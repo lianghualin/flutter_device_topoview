@@ -82,8 +82,8 @@ class _AppState extends State<App> {
     _eventLog = [];
     _topologyKey++;
 
-    if (scenario.format is SwitchDeviceFormat &&
-        (scenario.format as SwitchDeviceFormat).isStacked) {
+    if (scenario.format is SwitchFormat &&
+        (scenario.format as SwitchFormat).isStacked) {
       _stackedPart = 1;
     } else {
       _stackedPart = 0;
@@ -208,31 +208,19 @@ class _AppState extends State<App> {
     });
   }
 
-  DeviceFormat _applyImageOffset(DeviceFormat format) {
+  Object _applyImageOffset(Object format) {
     if (!_imageOffsetEnabled) return format;
-    if (format is SwitchDeviceFormat) {
-      return SwitchDeviceFormat(
+    // Image offsets only apply to DeviceFormat (host/agent), not SwitchFormat
+    if (format is DeviceFormat) {
+      return SimpleDeviceFormat(
         imgPath: format.imgPath,
-        evenPortOffsetR: format.evenPortOffsetR,
-        oddPortOffsetR: format.oddPortOffsetR,
-        totalPortsNum: format.totalPortsNum,
-        validPortsNum: format.validPortsNum,
-        isStacked: format.isStacked,
-        minWidth: format.minWidth,
-        minHeight: format.minHeight,
         hSizeFactor: format.hSizeFactor,
         wSizeFactor: format.wSizeFactor,
         imageOffsetX: _imageOffsetX,
         imageOffsetY: _imageOffsetY,
       );
     }
-    return SimpleDeviceFormat(
-      imgPath: format.imgPath,
-      hSizeFactor: format.hSizeFactor,
-      wSizeFactor: format.wSizeFactor,
-      imageOffsetX: _imageOffsetX,
-      imageOffsetY: _imageOffsetY,
-    );
+    return format;
   }
 
   void _handleStackedPartFromPanel(int part) {
@@ -245,8 +233,8 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     final scenario = _currentScenario;
-    final bool isStacked = scenario.format is SwitchDeviceFormat &&
-        (scenario.format as SwitchDeviceFormat).isStacked;
+    final bool isStacked = scenario.format is SwitchFormat &&
+        (scenario.format as SwitchFormat).isStacked;
 
     return Scaffold(
       appBar: AppBar(

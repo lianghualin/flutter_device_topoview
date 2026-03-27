@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_switch_device/flutter_switch_device.dart' hide PortStatus;
 import 'models/device_type.dart';
 import 'models/port_device.dart';
 import 'models/device_format.dart';
@@ -35,7 +36,7 @@ class DeviceTopologyView extends StatefulWidget {
 
   final Size size;
   final DeviceType deviceType;
-  final DeviceFormat format;
+  final Object format;
   final List<PortDevice> portDevices;
   final Map<String, PortStatus> portStatusMap;
   final String centerLabel;
@@ -147,8 +148,8 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   void _initializeLayout() {
     // Determine content size
     if (widget.deviceType == DeviceType.switch_ &&
-        widget.format is SwitchDeviceFormat) {
-      final switchFormat = widget.format as SwitchDeviceFormat;
+        widget.format is SwitchFormat) {
+      final switchFormat = widget.format as SwitchFormat;
       _contentWidth = widget.size.width < switchFormat.minWidth
           ? switchFormat.minWidth
           : widget.size.width;
@@ -234,10 +235,20 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
     // Check for overlaps between all elements
     final List<_DebugRect> allRects = [];
     // Center device — use actual rendered dimensions (wSizeFactor × hSizeFactor)
-    final double centerW = _centerLayout.size * widget.format.wSizeFactor;
-    final double centerH = _centerLayout.size * widget.format.hSizeFactor;
-    final double centerLeft = _centerLayout.position.dx + _centerLayout.size * (1 - widget.format.wSizeFactor);
-    final double centerTop = _centerLayout.position.dy + _centerLayout.size * widget.format.hSizeFactor;
+    final double debugWSizeFactor = widget.format is DeviceFormat
+        ? (widget.format as DeviceFormat).wSizeFactor
+        : widget.format is SwitchFormat
+            ? (widget.format as SwitchFormat).wSizeFactor
+            : 1.0;
+    final double debugHSizeFactor = widget.format is DeviceFormat
+        ? (widget.format as DeviceFormat).hSizeFactor
+        : widget.format is SwitchFormat
+            ? (widget.format as SwitchFormat).hSizeFactor
+            : 0.15;
+    final double centerW = _centerLayout.size * debugWSizeFactor;
+    final double centerH = _centerLayout.size * debugHSizeFactor;
+    final double centerLeft = _centerLayout.position.dx + _centerLayout.size * (1 - debugWSizeFactor);
+    final double centerTop = _centerLayout.position.dy + _centerLayout.size * debugHSizeFactor;
     allRects.add(_DebugRect(
       'Center',
       centerLeft,
@@ -405,8 +416,8 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         _selectedPortNumber = portNum;
 
         // For stacked switches: auto-switch to the correct part
-        if (widget.format is SwitchDeviceFormat) {
-          final switchFormat = widget.format as SwitchDeviceFormat;
+        if (widget.format is SwitchFormat) {
+          final switchFormat = widget.format as SwitchFormat;
           if (switchFormat.isStacked) {
             final int halfPorts = switchFormat.totalPortsNum ~/ 2;
             final int targetPart = portNum <= halfPorts ? 1 : 2;

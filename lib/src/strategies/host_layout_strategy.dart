@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import '../models/port_device.dart';
-import '../models/device_format.dart';
 import '../models/port_status.dart';
 import '../models/port.dart';
 import '../widgets/center_device_widget.dart';
@@ -27,7 +26,7 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
 
   @override
   CenterDeviceLayout calculateCenterLayout(
-      Size viewportSize, DeviceFormat format) {
+      Size viewportSize, Object format) {
     final double width = viewportSize.width;
     final double height = viewportSize.height;
 
@@ -63,7 +62,7 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
   @override
   List<Port> calculatePortPositions(
     CenterDeviceLayout center,
-    DeviceFormat format,
+    Object format,
     Map<String, PortStatus> statusMap,
   ) {
     // Calculate the center point of the center widget

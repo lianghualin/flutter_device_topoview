@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_switch_device/flutter_switch_device.dart';
 import 'package:topology_view_icons/topology_view_icons.dart';
 
 import '../models/device_format.dart';
@@ -22,7 +23,7 @@ class CenterDeviceLayout {
 
 class CenterDeviceWidget extends StatefulWidget {
   final CenterDeviceLayout layout;
-  final DeviceFormat format;
+  final Object format;
   final String label;
   final DeviceType deviceType;
 
@@ -76,7 +77,7 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
         return _buildAgentCenter();
       case DeviceType.switch_:
         final fmt = widget.format;
-        if (fmt is SwitchDeviceFormat && fmt.isStacked) {
+        if (fmt is SwitchFormat && fmt.isStacked) {
           return _buildSwitchStackedCenter(fmt);
         }
         return _buildSwitchCenter();
@@ -90,7 +91,7 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
   Widget _buildHostCenter() {
     final size = widget.layout.size;
     final pos = widget.layout.position;
-    final fmt = widget.format;
+    final fmt = widget.format as DeviceFormat;
     double widthAdjustment = (size * 1.8 - size) / 2;
 
     return Positioned(
@@ -158,7 +159,7 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
   Widget _buildAgentCenter() {
     final size = widget.layout.size;
     final pos = widget.layout.position;
-    final fmt = widget.format;
+    final fmt = widget.format as DeviceFormat;
 
     return Positioned(
       left: pos.dx + size * (1 - fmt.wSizeFactor),
@@ -194,11 +195,11 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
   Widget _buildSwitchCenter() {
     final size = widget.layout.size;
     final pos = widget.layout.position;
-    final fmt = widget.format;
+    final fmt = widget.format as SwitchFormat;
 
     return Positioned(
-      left: pos.dx + size * (1 - fmt.wSizeFactor) + fmt.imageOffsetX,
-      top: pos.dy + size * fmt.hSizeFactor + fmt.imageOffsetY,
+      left: pos.dx + size * (1 - fmt.wSizeFactor),
+      top: pos.dy + size * fmt.hSizeFactor,
       child: MouseRegion(
         onEnter: (_) => widget.onSwitchHover?.call(),
         onExit: (_) => widget.onSwitchHoverExit?.call(),
@@ -221,7 +222,7 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
   // Switch center (stacked -- two units vertically)
   // -------------------------------------------------------------------------
 
-  Widget _buildSwitchStackedCenter(SwitchDeviceFormat fmt) {
+  Widget _buildSwitchStackedCenter(SwitchFormat fmt) {
     final size = widget.layout.size;
     final pos = widget.layout.position;
     double switchWidth = size * fmt.wSizeFactor;
@@ -320,7 +321,7 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
 
 class CenterDeviceLayer extends StatelessWidget {
   final CenterDeviceLayout layout;
-  final DeviceFormat format;
+  final Object format;
   final String label;
   final DeviceType deviceType;
   final int stackedSwitchPart;

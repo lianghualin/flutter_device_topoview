@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 abstract class DeviceFormat {
   const DeviceFormat({
     required this.imgPath,
@@ -26,29 +24,4 @@ class SimpleDeviceFormat extends DeviceFormat {
     super.imageOffsetX,
     super.imageOffsetY,
   });
-}
-
-class SwitchDeviceFormat extends DeviceFormat {
-  const SwitchDeviceFormat({
-    required super.imgPath,
-    required this.evenPortOffsetR,
-    required this.oddPortOffsetR,
-    required this.totalPortsNum,
-    this.validPortsNum,
-    this.isStacked = false,
-    this.minWidth = 1500.0,
-    this.minHeight = 800.0,
-    super.hSizeFactor,
-    super.wSizeFactor,
-    super.imageOffsetX,
-    super.imageOffsetY,
-  });
-
-  final List<Offset> evenPortOffsetR;
-  final List<Offset> oddPortOffsetR;
-  final int totalPortsNum;
-  final int? validPortsNum;
-  final bool isStacked;
-  final double minWidth;
-  final double minHeight;
 }

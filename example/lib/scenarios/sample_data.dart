@@ -12,13 +12,13 @@ final List<Scenario> allScenarios = [
   _hostScenario(6),
   _agentScenario(1),
   _agentScenario(2),
-  _switchScenario(label: 'Switch 6P', format: const SwitchUD1U6P(), totalPorts: 6),
-  _switchScenario(label: 'Switch 10P', format: const SwitchUD1U10P(), totalPorts: 10),
-  _switchScenario(label: 'Switch 16P', format: const SwitchUD1U16P(), totalPorts: 16),
-  _switchScenario(label: 'Switch 24P', format: const SwitchUD1U24P(), totalPorts: 24),
-  _switchScenario(label: 'Switch 28P', format: const SwitchUD1U28P(), totalPorts: 28),
-  _switchScenario(label: 'Switch 30P (Stacked)', format: const SwitchUD1U30PStacked(), totalPorts: 48),
-  _switchScenario(label: 'Switch 48P (Stacked)', format: const SwitchUD1U48PStacked(), totalPorts: 48),
+  _switchScenario(label: 'Switch 6P', format: const Switch6P(), totalPorts: 6),
+  _switchScenario(label: 'Switch 10P', format: const Switch10P(), totalPorts: 10),
+  _switchScenario(label: 'Switch 16P', format: const Switch16P(), totalPorts: 16),
+  _switchScenario(label: 'Switch 24P', format: const Switch24P(), totalPorts: 24),
+  _switchScenario(label: 'Switch 28P', format: const Switch28P(), totalPorts: 28),
+  _switchScenario(label: 'Switch 30P (Stacked)', format: const Switch30PStacked(), totalPorts: 48),
+  _switchScenario(label: 'Switch 48P (Stacked)', format: const Switch48PStacked(), totalPorts: 48),
 ];
 
 Scenario _hostScenario(int deviceCount) {
@@ -66,7 +66,7 @@ Scenario _agentScenario(int portCount) {
 
 Scenario _switchScenario({
   required String label,
-  required SwitchDeviceFormat format,
+  required SwitchFormat format,
   required int totalPorts,
 }) {
   final devices = generateDevices(

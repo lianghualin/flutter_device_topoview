@@ -12,7 +12,7 @@ class Scenario {
 
   final String label;
   final DeviceType deviceType;
-  final DeviceFormat format;
+  final Object format;
   final List<PortDevice> portDevices;
   final Map<String, PortStatus> portStatusMap;
   final String centerLabel;
@@ -20,8 +20,8 @@ class Scenario {
   int get maxDevices {
     if (deviceType == DeviceType.host) return 6;
     if (deviceType == DeviceType.agent) return 2;
-    if (format is SwitchDeviceFormat) {
-      final sf = format as SwitchDeviceFormat;
+    if (format is SwitchFormat) {
+      final sf = format as SwitchFormat;
       return sf.validPortsNum ?? sf.totalPortsNum;
     }
     return 6;

@@ -77,6 +77,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  flutter_switch_device:
+    dependency: transitive
+    description:
+      name: flutter_switch_device
+      sha256: c8b71311e3c5aeefcc80347f910b673809f248c3a4504a8001220f3df0d7f615
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -224,5 +232,5 @@ packages:
     source: hosted
     version: "15.0.2"
 sdks:
-  dart: ">=3.9.0-0 <4.0.0"
+  dart: ">=3.11.0 <4.0.0"
   flutter: ">=3.18.0-18.0.pre.54"
