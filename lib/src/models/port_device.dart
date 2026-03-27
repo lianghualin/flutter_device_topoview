@@ -16,22 +16,22 @@ class PortDevice {
   /// Port/slot identifier. e.g. "slotA", "Port1", "23"
   final String portId;
 
-  /// Numeric port number (required for switch, null for host/dpu)
+  /// Numeric port number (required for switch, null for host/agent)
   final int? portNumber;
 
   /// Baseline device display name
   final String deviceName;
 
-  /// Device type string: 'Switch', 'Host', 'DPU', 'Unknown'
+  /// Device type string: 'Switch', 'Host', 'Agent', 'Unknown'
   final String deviceType;
 
   /// Device IP address (baseline)
   final String? deviceIp;
 
-  /// Explored/discovered device name (host/dpu only)
+  /// Explored/discovered device name (host/agent only)
   final String? exploreDevName;
 
-  /// Explored/discovered device IP (host/dpu only)
+  /// Explored/discovered device IP (host/agent only)
   final String? exploreDevIp;
 
   /// 0=baseline, 1=matched, -1=probed/explore-only

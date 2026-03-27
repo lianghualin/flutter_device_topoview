@@ -14,7 +14,7 @@ import 'device_layout_strategy.dart';
 /// positions, device positions) are left abstract for subclasses.
 abstract class SlotBasedLayoutStrategy extends DeviceLayoutStrategy {
   // ---------------------------------------------------------------------------
-  // buildFloatingDevices  -- shared between host & dpu
+  // buildFloatingDevices  -- shared between host & agent
   // ---------------------------------------------------------------------------
 
   @override
@@ -81,7 +81,7 @@ abstract class SlotBasedLayoutStrategy extends DeviceLayoutStrategy {
   }
 
   // ---------------------------------------------------------------------------
-  // generateConnections  -- baseline connection lines (host & dpu shared)
+  // generateConnections  -- baseline connection lines (host & agent shared)
   // ---------------------------------------------------------------------------
 
   @override

@@ -21,7 +21,7 @@ import 'device_layout_strategy.dart';
 /// - Device positioning (odd ports -> top, even ports -> bottom)
 /// - Stacked switch state (part selection, port filtering, opacity)
 /// - isConfig mode (filters out probed devices)
-/// - 4 floating device types (Switch, Host/MMI, DPU, Unknown)
+/// - 4 floating device types (Switch, Host/MMI, Agent, Unknown)
 class SwitchLayoutStrategy extends DeviceLayoutStrategy {
   final bool isConfig;
   final int stackedSwitchSelectedPart;

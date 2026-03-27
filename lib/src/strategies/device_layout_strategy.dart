@@ -31,7 +31,7 @@ class PositionedDevice {
 
 /// Abstract base for all device layout strategies.
 ///
-/// Each concrete strategy (host, dpu, switch) implements these methods
+/// Each concrete strategy (host, agent, switch) implements these methods
 /// to compute positions, build widgets, and generate connection lines.
 abstract class DeviceLayoutStrategy {
   /// Compute center device layout (position + size) from viewport.
