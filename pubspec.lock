@@ -62,6 +62,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.1"
+  flutter_host_device:
+    dependency: "direct main"
+    description:
+      name: flutter_host_device
+      sha256: "1175f0d32fe39973246a596da14f63df5d5797b29dcaf1cf7787802c7ba748d6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   flutter_switch_device:
     dependency: "direct main"
     description:

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_host_device/flutter_host_device.dart' hide PortStatus;
+import 'package:flutter_host_device/flutter_host_device.dart'
+    as host_pkg show PortStatus;
 import 'package:flutter_switch_device/flutter_switch_device.dart' hide PortStatus;
 import 'package:flutter_switch_device/flutter_switch_device.dart'
     as switch_pkg show PortStatus;
@@ -520,6 +523,46 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   }
 
   // ---------------------------------------------------------------------------
+  // Host port status / label conversion
+  // ---------------------------------------------------------------------------
+
+  /// Converts the local [PortStatus] map (String keys) to the package's
+  /// [host_pkg.PortStatus] map (int keys) for [HostDeviceView].
+  ///
+  /// Host ports use the same reversed-entry ordering as the layout strategy:
+  /// port 1 = last statusMap entry, port 2 = second-to-last, etc.
+  Map<int, host_pkg.PortStatus> _buildHostPortStatuses() {
+    final result = <int, host_pkg.PortStatus>{};
+    final reversed = widget.portStatusMap.entries.toList().reversed.toList();
+    for (int i = 0; i < reversed.length; i++) {
+      final int portNum = i + 1;
+      switch (reversed[i].value) {
+        case PortStatus.up:
+          result[portNum] = host_pkg.PortStatus.up;
+          break;
+        case PortStatus.down:
+          result[portNum] = host_pkg.PortStatus.down;
+          break;
+        case PortStatus.unknown:
+          result[portNum] = host_pkg.PortStatus.unknown;
+          break;
+      }
+    }
+    return result;
+  }
+
+  /// Builds port labels for [HostDeviceView].
+  /// Maps 1-based port numbers to the portId strings from the statusMap.
+  Map<int, String> _buildHostPortLabels() {
+    final result = <int, String>{};
+    final reversed = widget.portStatusMap.entries.toList().reversed.toList();
+    for (int i = 0; i < reversed.length; i++) {
+      result[i + 1] = reversed[i].key;
+    }
+    return result;
+  }
+
+  // ---------------------------------------------------------------------------
   // Switch port status conversion
   // ---------------------------------------------------------------------------
 
@@ -572,7 +615,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
               height: _contentHeight,
               child: Stack(
                 children: [
-                  // Layer 1: Center device (+ ports for switch mode)
+                  // Layer 1: Center device (+ ports for switch/host mode)
                   if (widget.deviceType == DeviceType.switch_ &&
                       widget.format is SwitchFormat)
                     SwitchDeviceView(
@@ -590,6 +633,20 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       selectedPorts: _selectedPortNumber != null
                           ? {_selectedPortNumber!}
                           : const {},
+                    )
+                  else if (widget.deviceType == DeviceType.host)
+                    HostDeviceView(
+                      size: Size(_contentWidth, _contentHeight),
+                      portCount: widget.portStatusMap.length,
+                      portStatuses: _buildHostPortStatuses(),
+                      portLabels: _buildHostPortLabels(),
+                      isConfig: widget.isConfig,
+                      centerLabel: widget.centerLabel,
+                      centerYFactor: widget.portDevices.length <= 2
+                          ? 0.55
+                          : widget.portDevices.length <= 4
+                              ? 0.63
+                              : 0.72,
                     )
                   else
                     CenterDeviceLayer(
@@ -638,8 +695,8 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       activePortNumber: _switchActivePort,
                       enableAnimations: widget.enableAnimations,
                     ),
-                  // Layer 6: Ports (non-switch only; SwitchDeviceView renders its own)
-                  if (widget.deviceType != DeviceType.switch_)
+                  // Layer 6: Ports (agent only; Switch/HostDeviceView render their own)
+                  if (widget.deviceType == DeviceType.agent)
                     PortLayer(
                       ports: _ports,
                       onPortHover: null,

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_host_device/flutter_host_device.dart' hide PortStatus;
 import '../models/port_device.dart';
 import '../models/port_status.dart';
 import '../models/port.dart';
@@ -30,6 +31,9 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
     final double width = viewportSize.width;
     final double height = viewportSize.height;
 
+    // Cache viewport size for use by calculatePortPositions
+    _cachedViewportSize = viewportSize;
+
     // Center size based on viewport dimensions
     final double minDimension = min(width, height);
     final double centerSize = minDimension * 0.3;
@@ -56,8 +60,12 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
   }
 
   // ---------------------------------------------------------------------------
-  // calculatePortPositions  -- semi-elliptical positioning above center
+  // calculatePortPositions  -- delegates to HostDeviceView.getPortPositions()
   // ---------------------------------------------------------------------------
+
+  /// Cached viewport size from [calculateCenterLayout], used by
+  /// [calculatePortPositions] to call the package's layout engine.
+  Size _cachedViewportSize = Size.zero;
 
   @override
   List<Port> calculatePortPositions(
@@ -65,30 +73,43 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
     Object format,
     Map<String, PortStatus> statusMap,
   ) {
-    // Calculate the center point of the center widget
-    final double hostCenterX = center.position.dx + center.size / 2;
-    final double hostCenterY = center.position.dy + center.size / 2;
-    final Offset centerPoint = Offset(hostCenterX, hostCenterY);
-
     final int numPorts = statusMap.length;
-    final List<Offset> portPositions = _calculatePortPositions(
-      centerPoint,
-      center.size,
+    if (numPorts <= 0) return [];
+
+    // Compute centerYFactor consistently with calculateCenterLayout
+    final double centerYFactor = deviceCount <= 2
+        ? 0.55
+        : deviceCount <= 4
+            ? 0.63
+            : 0.72;
+
+    // Use the package's layout engine for port center positions.
+    // Returns positions in viewport coordinates (NOT relative to center).
+    final Map<int, Offset> portCenters = HostDeviceView.getPortPositions(
       numPorts,
-      radiusFactor: 1.2,
-      isUpward: true,
+      _cachedViewportSize,
+      centerYFactor: centerYFactor,
     );
 
-    final List<Port> ports = [];
     const double portWidth = 30.0;
     const double portHeight = 30.0;
 
-    // Iterate in reverse to match original host_topoview ordering
-    int i = 0;
-    for (final entry in statusMap.entries.toList().reversed) {
+    final List<Port> ports = [];
+
+    // The statusMap entries are keyed by portId strings.
+    // The current code iterates statusMap.entries.reversed, so:
+    //   port 1 = last entry, port 2 = second-to-last, etc.
+    final reversedEntries = statusMap.entries.toList().reversed.toList();
+
+    for (int i = 0; i < reversedEntries.length; i++) {
+      final entry = reversedEntries[i];
+      final int portNumber = i + 1; // 1-based
+      final Offset? portCenter = portCenters[portNumber];
+      if (portCenter == null) continue;
+
       final Offset adjustedPosition = Offset(
-        portPositions[i].dx - portWidth / 2,
-        portPositions[i].dy - portHeight / 2,
+        portCenter.dx - portWidth / 2,
+        portCenter.dy - portHeight / 2,
       );
 
       // Convert PortStatus to bool? for isUp
@@ -103,7 +124,6 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
         showLabel: true,
         rotation: 0,
       ));
-      i++;
     }
     return ports;
   }
@@ -257,51 +277,6 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
-
-  /// Calculate port positions in a semi-ellipse.
-  List<Offset> _calculatePortPositions(
-    Offset center,
-    double centerSize,
-    int numPorts, {
-    double? radiusFactor,
-    bool isUpward = true,
-    double ellipseRatio = 1.2,
-  }) {
-    final List<Offset> positions = [];
-    if (numPorts <= 0) return positions;
-
-    final double horizontalRadius = (radiusFactor ?? 0.6) * centerSize;
-    final double verticalRadius = horizontalRadius / ellipseRatio;
-
-    // Special case: single port directly above/below center
-    if (numPorts == 1) {
-      final double angle = isUpward ? -pi / 2 : pi / 2;
-      final double x = center.dx + horizontalRadius * cos(angle);
-      final double y = center.dy + verticalRadius * sin(angle);
-      positions.add(Offset(x, y));
-      return positions;
-    }
-
-    // Multiple ports distributed along an arc.
-    // Inset the angles so ports always have an upward component
-    // (avoids pure horizontal placement with 2 ports).
-    const double anglePadding = pi / 6;
-    final double startAngle = isUpward ? anglePadding : pi + anglePadding;
-    final double endAngle = isUpward ? pi - anglePadding : 2 * pi - anglePadding;
-    final double totalAngle = endAngle - startAngle;
-    final double angleStep =
-        numPorts > 1 ? totalAngle / (numPorts - 1) : 0;
-
-    for (int i = 0; i < numPorts; i++) {
-      final double currentAngle = startAngle + (angleStep * i);
-      final double x = center.dx + horizontalRadius * cos(currentAngle);
-      final double y = isUpward
-          ? center.dy - verticalRadius * sin(currentAngle)
-          : center.dy + verticalRadius * sin(currentAngle);
-      positions.add(Offset(x, y));
-    }
-    return positions;
-  }
 
   /// Clamp a position to stay within the viewport with a margin.
   Offset _clampToViewport(Offset position, Size viewport, double margin) {

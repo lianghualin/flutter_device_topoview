@@ -5,8 +5,8 @@ export 'src/models/device_type.dart';
 export 'src/models/port_device.dart';
 export 'src/models/device_format.dart';
 export 'src/models/port_status.dart';
-export 'src/presets/host_presets.dart';
 export 'src/presets/agent_presets.dart';
+export 'package:flutter_host_device/flutter_host_device.dart' show HostDeviceView;
 export 'package:flutter_switch_device/flutter_switch_device.dart' show
     SwitchFormat,
     Switch6P, Switch8P, Switch10P, Switch12P, Switch14P,

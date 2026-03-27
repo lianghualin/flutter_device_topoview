@@ -36,7 +36,7 @@ Scenario _hostScenario(int deviceCount) {
   return Scenario(
     label: 'Host ($deviceCount device${deviceCount > 1 ? 's' : ''})',
     deviceType: DeviceType.host,
-    format: const HostTemplate(),
+    format: const SimpleDeviceFormat(imgPath: ''),
     portDevices: devices,
     portStatusMap: portStatusMap,
     centerLabel: 'Host-Server',
