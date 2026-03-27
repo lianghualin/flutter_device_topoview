@@ -11,12 +11,12 @@ import '../widgets/floating_devices/dev_float.dart';
 import 'device_layout_strategy.dart';
 import 'slot_based_layout_strategy.dart';
 
-/// Layout strategy for DPU topology views.
+/// Layout strategy for Agent topology views.
 ///
 /// Ports are arranged in two horizontal rows (slotA / slotB) below the
 /// center device. Floating switch devices (max 2) are positioned by slot
 /// group -- slotA on the left, slotB on the right.
-class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
+class AgentLayoutStrategy extends SlotBasedLayoutStrategy {
   // ---------------------------------------------------------------------------
   // calculateCenterLayout
   // ---------------------------------------------------------------------------
@@ -162,10 +162,10 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
     double deviceSize = minDimension * 0.10;
     deviceSize = deviceSize.clamp(50.0, 100.0);
 
-    // DPU center X
-    final double dpuCenterX = center.position.dx + center.size / 2;
+    // Agent center X
+    final double agentCenterX = center.position.dx + center.size / 2;
 
-    // Position devices ABOVE the DPU center
+    // Position devices ABOVE the Agent center
     final double baselineY = center.position.dy - deviceSize * 0.8;
     final double horizontalSpacing = contentWidth * 0.22;
     final double visualPadding = (deviceSize + 30) / 2 + 10;
@@ -181,8 +181,8 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
     for (final device in validDevices) {
       final bool isSlotA = device.portId.contains('slotA');
       final double x = isSlotA
-          ? dpuCenterX - horizontalSpacing
-          : dpuCenterX + horizontalSpacing;
+          ? agentCenterX - horizontalSpacing
+          : agentCenterX + horizontalSpacing;
 
       Offset pos = Offset(x, baselineY);
       pos = _clampToViewport(pos, viewportSize, visualPadding);
@@ -253,12 +253,12 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
   }
 
   // ---------------------------------------------------------------------------
-  // generateConnections  -- DPU slot-based matching
+  // generateConnections  -- Agent slot-based matching
   // ---------------------------------------------------------------------------
   //
-  // DPU has a different connection model from host:
+  // Agent has a different connection model from host:
   //   - Host: 1 device per port, portId directly matches port label
-  //   - DPU:  1 device per slot, multiple ports per slot
+  //   - Agent:  1 device per slot, multiple ports per slot
   //           device portId is 'slotA'/'slotB', port labels are 'slotA_port1', etc.
   //
   // We group ports by slot prefix and connect each device to the center
@@ -357,7 +357,7 @@ class DpuLayoutStrategy extends SlotBasedLayoutStrategy {
   }
 
   // ---------------------------------------------------------------------------
-  // generateExploreConnections  -- DPU slot-based matching
+  // generateExploreConnections  -- Agent slot-based matching
   // ---------------------------------------------------------------------------
 
   @override

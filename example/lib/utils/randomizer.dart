@@ -4,7 +4,7 @@ import 'package:device_topology_view/device_topology_view.dart';
 
 final _random = Random();
 
-const _deviceTypes = ['Switch', 'Host', 'MMI', 'DPU', 'Unknown'];
+const _deviceTypes = ['Switch', 'Host', 'MMI', 'Agent', 'Unknown'];
 
 Map<String, PortStatus> randomizePortStatuses(Map<String, PortStatus> original) {
   final values = PortStatus.values;
@@ -28,8 +28,8 @@ List<PortDevice> generateDevices({
   switch (deviceType) {
     case DeviceType.host:
       return _generateHostDevices(count, fullMismatch);
-    case DeviceType.dpu:
-      return _generateDpuDevices(count, fullMismatch);
+    case DeviceType.agent:
+      return _generateAgentDevices(count, fullMismatch);
     case DeviceType.switch_:
       return _generateSwitchDevices(count, fullMismatch);
   }
@@ -69,7 +69,7 @@ List<PortDevice> _generateHostDevices(int count, bool fullMismatch) {
   });
 }
 
-List<PortDevice> _generateDpuDevices(int count, bool fullMismatch) {
+List<PortDevice> _generateAgentDevices(int count, bool fullMismatch) {
   final slots = ['slotA', 'slotB'];
   return List.generate(count.clamp(0, 2), (i) {
     return _buildPortDevice(

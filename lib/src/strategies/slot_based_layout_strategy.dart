@@ -6,9 +6,9 @@ import '../widgets/floating_devices/dev_float.dart';
 import '../widgets/floating_devices/switch_dev_float.dart';
 import 'device_layout_strategy.dart';
 
-/// Shared base for Host and DPU layout strategies.
+/// Shared base for Host and Agent layout strategies.
 ///
-/// Both host and DPU topologies connect only to switch-type floating devices,
+/// Both host and Agent topologies connect only to switch-type floating devices,
 /// and share nearly identical logic for building floating widgets and
 /// generating connection lines. The differences (center layout, port
 /// positions, device positions) are left abstract for subclasses.
@@ -103,7 +103,7 @@ abstract class SlotBasedLayoutStrategy extends DeviceLayoutStrategy {
     for (final device in devices) {
       // Only take baseline devices (not explore). In the combined list,
       // baseline devices come first and use deviceName/deviceIp as label.
-      // We also index by portId to support DPU slot-based matching.
+      // We also index by portId to support Agent slot-based matching.
       if (device.portId.isNotEmpty) {
         deviceMap[device.portId] = device;
       }
@@ -122,7 +122,7 @@ abstract class SlotBasedLayoutStrategy extends DeviceLayoutStrategy {
           : (relationship.deviceIp ?? '');
 
       final Port? port = portMap[relationship.portId];
-      // Try matching by portId first (DPU), then by label (host)
+      // Try matching by portId first (Agent), then by label (host)
       final DevFloat? device =
           deviceMap[relationship.portId] ?? deviceMap[deviceLabel];
 

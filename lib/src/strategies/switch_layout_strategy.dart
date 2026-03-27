@@ -9,7 +9,7 @@ import '../models/connection_line.dart';
 import '../widgets/floating_devices/dev_float.dart';
 import '../widgets/floating_devices/switch_dev_float.dart';
 import '../widgets/floating_devices/host_dev_float.dart';
-import '../widgets/floating_devices/dpu_dev_float.dart';
+import '../widgets/floating_devices/agent_dev_float.dart';
 import '../widgets/floating_devices/unknown_dev_float.dart';
 import '../widgets/center_device_widget.dart';
 import 'device_layout_strategy.dart';
@@ -522,8 +522,8 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
           outboundUtilization: outboundUtilization,
           isRealDevice: isReal,
         );
-      case 'DPU':
-        return DpuDevFloat(
+      case 'Agent':
+        return AgentDevFloat(
           portstatus: dev.connectionStatus,
           position: pd.position,
           label: label,

@@ -1,1 +1,1 @@
-enum DeviceType { host, dpu, switch_ }
+enum DeviceType { host, agent, switch_ }

@@ -184,7 +184,7 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
             widget.deviceType == 'Unknown' ||
             widget.deviceType == 'Switch' ||
             widget.deviceType == 'Host' ||
-            widget.deviceType == 'DPU'
+            widget.deviceType == 'Agent'
         ? 1.0
         : _controller.value;
 

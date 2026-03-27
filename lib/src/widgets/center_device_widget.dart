@@ -18,7 +18,7 @@ class CenterDeviceLayout {
 }
 
 // ---------------------------------------------------------------------------
-// CenterDeviceWidget  -- unified widget for host / dpu / switch center device
+// CenterDeviceWidget  -- unified widget for host / agent / switch center device
 // ---------------------------------------------------------------------------
 
 class CenterDeviceWidget extends StatefulWidget {
@@ -73,8 +73,8 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
     switch (widget.deviceType) {
       case DeviceType.host:
         return _buildHostCenter();
-      case DeviceType.dpu:
-        return _buildDpuCenter();
+      case DeviceType.agent:
+        return _buildAgentCenter();
       case DeviceType.switch_:
         final fmt = widget.format;
         if (fmt is SwitchDeviceFormat && fmt.isStacked) {
@@ -168,10 +168,10 @@ class _CenterDeviceWidgetState extends State<CenterDeviceWidget>
   }
 
   // -------------------------------------------------------------------------
-  // DPU center
+  // Agent center
   // -------------------------------------------------------------------------
 
-  Widget _buildDpuCenter() {
+  Widget _buildAgentCenter() {
     final size = widget.layout.size;
     final pos = widget.layout.position;
     final fmt = widget.format;

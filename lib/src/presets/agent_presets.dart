@@ -1,6 +1,6 @@
 import '../models/device_format.dart';
 
-class DPUTemplate extends SimpleDeviceFormat {
-  const DPUTemplate()
+class AgentTemplate extends SimpleDeviceFormat {
+  const AgentTemplate()
       : super(imgPath: 'assets/images/dpu_center.svg');
 }

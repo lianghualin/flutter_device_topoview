@@ -12,7 +12,7 @@ import 'widgets/dev_layer.dart';
 import 'widgets/port_layer.dart';
 import 'strategies/device_layout_strategy.dart';
 import 'strategies/host_layout_strategy.dart';
-import 'strategies/dpu_layout_strategy.dart';
+import 'strategies/agent_layout_strategy.dart';
 import 'strategies/switch_layout_strategy.dart';
 import 'mixins/pan_zoom_mixin.dart';
 
@@ -132,8 +132,8 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
           deviceCount: widget.portDevices.length,
         );
         break;
-      case DeviceType.dpu:
-        _strategy = DpuLayoutStrategy();
+      case DeviceType.agent:
+        _strategy = AgentLayoutStrategy();
         break;
       case DeviceType.switch_:
         _strategy = SwitchLayoutStrategy(

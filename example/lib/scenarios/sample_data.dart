@@ -10,8 +10,8 @@ final List<Scenario> allScenarios = [
   _hostScenario(4),
   _hostScenario(5),
   _hostScenario(6),
-  _dpuScenario(1),
-  _dpuScenario(2),
+  _agentScenario(1),
+  _agentScenario(2),
   _switchScenario(label: 'Switch 6P', format: const SwitchUD1U6P(), totalPorts: 6),
   _switchScenario(label: 'Switch 10P', format: const SwitchUD1U10P(), totalPorts: 10),
   _switchScenario(label: 'Switch 16P', format: const SwitchUD1U16P(), totalPorts: 16),
@@ -43,9 +43,9 @@ Scenario _hostScenario(int deviceCount) {
   );
 }
 
-Scenario _dpuScenario(int portCount) {
+Scenario _agentScenario(int portCount) {
   final devices = generateDevices(
-    deviceType: DeviceType.dpu,
+    deviceType: DeviceType.agent,
     count: portCount,
   );
 
@@ -55,12 +55,12 @@ Scenario _dpuScenario(int portCount) {
   }
 
   return Scenario(
-    label: 'DPU ($portCount port${portCount > 1 ? 's' : ''})',
-    deviceType: DeviceType.dpu,
-    format: const DPUTemplate(),
+    label: 'Agent ($portCount port${portCount > 1 ? 's' : ''})',
+    deviceType: DeviceType.agent,
+    format: const AgentTemplate(),
     portDevices: devices,
     portStatusMap: portStatusMap,
-    centerLabel: 'DPU-Node',
+    centerLabel: 'Agent-Node',
   );
 }
 

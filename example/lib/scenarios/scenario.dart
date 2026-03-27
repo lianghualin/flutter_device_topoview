@@ -19,7 +19,7 @@ class Scenario {
 
   int get maxDevices {
     if (deviceType == DeviceType.host) return 6;
-    if (deviceType == DeviceType.dpu) return 2;
+    if (deviceType == DeviceType.agent) return 2;
     if (format is SwitchDeviceFormat) {
       final sf = format as SwitchDeviceFormat;
       return sf.validPortsNum ?? sf.totalPortsNum;

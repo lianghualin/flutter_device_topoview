@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dev_float.dart';
 
-class DpuDevFloat extends DevFloat {
+class AgentDevFloat extends DevFloat {
   final int totalPfs;
   final int usedPfs;
 
-  DpuDevFloat({
+  AgentDevFloat({
     required super.position,
     required super.label,
     required super.portstatus,
@@ -21,7 +21,7 @@ class DpuDevFloat extends DevFloat {
     super.inboundUtilization,
     super.outboundUtilization,
     super.isRealDevice,
-  }) : super(deviceType: 'DPU');
+  }) : super(deviceType: 'Agent');
 
   @override
   Widget createWidget({
@@ -36,7 +36,7 @@ class DpuDevFloat extends DevFloat {
   }) {
     String uniqueKeyString = '${portId}_${label}_${deviceType}_$portstatus';
 
-    return DpuDevFloatWidget(
+    return AgentDevFloatWidget(
       key: ValueKey(uniqueKeyString),
       label: label,
       portstatus: portstatus,
@@ -62,11 +62,11 @@ class DpuDevFloat extends DevFloat {
   }
 }
 
-class DpuDevFloatWidget extends DevFloatWidget {
+class AgentDevFloatWidget extends DevFloatWidget {
   final int totalPfs;
   final int usedPfs;
 
-  const DpuDevFloatWidget({
+  const AgentDevFloatWidget({
     super.key,
     required super.label,
     required super.portstatus,
@@ -91,10 +91,10 @@ class DpuDevFloatWidget extends DevFloatWidget {
   });
 
   @override
-  State<DpuDevFloatWidget> createState() => _DpuDevFloatWidgetState();
+  State<AgentDevFloatWidget> createState() => _AgentDevFloatWidgetState();
 }
 
-class _DpuDevFloatWidgetState extends DevFloatWidgetState<DpuDevFloatWidget> {
+class _AgentDevFloatWidgetState extends DevFloatWidgetState<AgentDevFloatWidget> {
   @override
   Widget buildCompactIcon(double animationValue) {
     return SvgPicture.asset(
