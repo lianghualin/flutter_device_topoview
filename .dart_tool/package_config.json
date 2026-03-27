@@ -50,6 +50,18 @@
       "languageVersion": "3.5"
     },
     {
+      "name": "flutter_host_device",
+      "rootUri": "file:///Users/hualinliang/.pub-cache/hosted/pub.dev/flutter_host_device-0.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.11"
+    },
+    {
+      "name": "flutter_switch_device",
+      "rootUri": "file:///Users/hualinliang/.pub-cache/hosted/pub.dev/flutter_switch_device-0.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.11"
+    },
+    {
       "name": "flutter_test",
       "rootUri": "file:///opt/homebrew/share/flutter/packages/flutter_test",
       "packageUri": "lib/",

@@ -5,10 +5,12 @@
   "packages": [
     {
       "name": "device_topology_view",
-      "version": "1.0.0",
+      "version": "1.2.0",
       "dependencies": [
         "flutter",
         "flutter_device_ring",
+        "flutter_host_device",
+        "flutter_switch_device",
         "topology_view_icons"
       ],
       "devDependencies": [
@@ -31,6 +33,21 @@
         "stream_channel",
         "test_api",
         "vector_math"
+      ]
+    },
+    {
+      "name": "flutter_host_device",
+      "version": "0.3.0",
+      "dependencies": [
+        "flutter",
+        "topology_view_icons"
+      ]
+    },
+    {
+      "name": "flutter_switch_device",
+      "version": "0.3.0",
+      "dependencies": [
+        "flutter"
       ]
     },
     {

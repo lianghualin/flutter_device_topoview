@@ -80,17 +80,14 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   int _stackedSwitchSelectedPart = 0;
   Set<int> _selectedPorts = {};
   int? _hoveredPortNumber;
-  bool _isHoveringSwitch = false;
 
   /// Active port for spotlight dimming (switch only).
-  /// Returns -1 when hovering switch but no specific port (dim everything).
-  /// Returns port number when hovering a specific port (spotlight that port).
-  /// Returns null when not hovering switch (no dimming).
+  /// Returns a port number when a port is hovered or selected (spotlight mode).
+  /// Returns null when no port interaction (no dimming).
   int? get _switchActivePort {
     if (widget.deviceType != DeviceType.switch_) return null;
-    if (_selectedPorts.isNotEmpty) return _selectedPorts.first; // spotlight active
+    if (_selectedPorts.isNotEmpty) return _selectedPorts.first;
     if (_hoveredPortNumber != null) return _hoveredPortNumber;
-    if (_isHoveringSwitch) return -1; // sentinel: dim everything
     return null;
   }
 
@@ -489,21 +486,10 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
     });
   }
 
-  void _handleSwitchHover() {
-    setState(() {
-      _isHoveringSwitch = true;
-      _updateDashFlow();
-    });
-  }
-
-  void _handleSwitchHoverExit() {
-    setState(() {
-      _isHoveringSwitch = false;
-      _hoveredPortNumber = null;
-      _updateHighlightStates();
-      _updateDashFlow();
-    });
-  }
+  // Note: onSwitchHover/onSwitchHoverExit from SwitchDeviceView are not used
+  // because the package wraps a MouseRegion around the full viewport, which
+  // would dim everything whenever the mouse is anywhere in the view.
+  // Dimming is instead triggered only by port hover/selection.
 
   void _handleDeviceSelected(int deviceId) {
     setState(() {
@@ -530,7 +516,6 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
     setState(() {
       _selectedPorts.clear();
       _hoveredPortNumber = null;
-      _isHoveringSwitch = false;
       _updateHighlightStates();
       _updateDashFlow();
     });
@@ -653,8 +638,6 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       onPortHover: _handlePortHover,
                       onPortHoverExit: _handlePortHoverExit,
                       onPortTap: _handlePortTap,
-                      onSwitchHover: _handleSwitchHover,
-                      onSwitchHoverExit: _handleSwitchHoverExit,
                       stackedPart: _stackedSwitchSelectedPart,
                       onStackedPartChanged: _handleStackedPartChanged,
                       selectedPorts: _selectedPorts,

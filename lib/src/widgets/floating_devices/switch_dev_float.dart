@@ -86,12 +86,11 @@ class _SwitchDevFloatWidgetState
     extends DevFloatWidgetState<SwitchDevFloatWidget> {
   @override
   Widget buildCompactIcon(double animationValue) {
-    return SizedBox.expand(
-      child: CustomPaint(
-        painter: TopoIconPainter(
-          deviceType: TopoDeviceType.switch_,
-          style: TopoIconStyle.lnm,
-        ),
+    return CustomPaint(
+      size: Size(widget.size, widget.size),
+      painter: TopoIconPainter(
+        deviceType: TopoDeviceType.switch_,
+        style: TopoIconStyle.lnm,
       ),
     );
   }
