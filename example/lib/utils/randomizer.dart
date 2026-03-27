@@ -7,7 +7,7 @@ final _random = Random();
 const _deviceTypes = ['Switch', 'Host', 'MMI', 'Agent', 'Unknown'];
 
 Map<String, PortStatus> randomizePortStatuses(Map<String, PortStatus> original) {
-  final values = PortStatus.values;
+  const values = PortStatus.values;
   return original.map(
     (key, _) => MapEntry(key, values[_random.nextInt(values.length)]),
   );

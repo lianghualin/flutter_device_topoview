@@ -122,7 +122,7 @@ class ControlPanel extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _SectionHeader(title: 'Mode'),
+                  const _SectionHeader(title: 'Mode'),
                   SwitchListTile(
                     title: const Text('isConfig'),
                     subtitle: const Text('Configuration mode'),
@@ -168,7 +168,7 @@ class ControlPanel extends StatelessWidget {
                   ],
                   const SizedBox(height: 8),
 
-                  _SectionHeader(title: 'Port Statuses'),
+                  const _SectionHeader(title: 'Port Statuses'),
                   ElevatedButton.icon(
                     onPressed: onRandomize,
                     icon: const Icon(Icons.shuffle, size: 16),
@@ -188,7 +188,7 @@ class ControlPanel extends StatelessWidget {
                   const SizedBox(height: 8),
 
                   if (deviceType == DeviceType.switch_ && isStacked) ...[
-                    _SectionHeader(title: 'Stacked Part'),
+                    const _SectionHeader(title: 'Stacked Part'),
                     SegmentedButton<int>(
                       segments: const [
                         ButtonSegment(value: 1, label: Text('Part 1')),
@@ -202,7 +202,7 @@ class ControlPanel extends StatelessWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  _SectionHeader(title: 'Outer Circle (Config)'),
+                  const _SectionHeader(title: 'Outer Circle (Config)'),
                   Row(
                     children: [
                       Expanded(
@@ -224,7 +224,7 @@ class ControlPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  _SectionHeader(title: 'Port Connections'),
+                  const _SectionHeader(title: 'Port Connections'),
                   if (portDevices.isEmpty)
                     const Padding(
                       padding: EdgeInsets.all(8),
@@ -279,7 +279,7 @@ class ControlPanel extends StatelessWidget {
                                 onChanged: (v) => onExploreToggled(i, v),
                                 dense: true,
                                 contentPadding: EdgeInsets.zero,
-                                activeColor: Colors.red,
+                                activeThumbColor: Colors.red,
                               ),
                           ],
                         ),

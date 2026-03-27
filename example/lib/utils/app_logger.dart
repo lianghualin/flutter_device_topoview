@@ -90,37 +90,37 @@ class AppLogger {
         message.contains('renderbox was not laid out') ||
         message.contains('has no size') ||
         library.contains('rendering')) {
-      return _ErrorCategory('LAYOUT', LogLevel.error);
+      return const _ErrorCategory('LAYOUT', LogLevel.error);
     }
 
     // Assertion errors (usually from framework)
     if (details.exception is AssertionError) {
-      return _ErrorCategory('ASSERTION', LogLevel.error);
+      return const _ErrorCategory('ASSERTION', LogLevel.error);
     }
 
     // State errors
     if (details.exception is StateError ||
         message.contains('setstate') ||
         message.contains('disposed')) {
-      return _ErrorCategory('STATE', LogLevel.error);
+      return const _ErrorCategory('STATE', LogLevel.error);
     }
 
     // Null / type errors
     if (details.exception is TypeError || details.exception is NoSuchMethodError) {
-      return _ErrorCategory('TYPE', LogLevel.error);
+      return const _ErrorCategory('TYPE', LogLevel.error);
     }
 
     // Paint / rendering warnings
     if (library.contains('painting') || library.contains('image')) {
-      return _ErrorCategory('PAINT', LogLevel.warning);
+      return const _ErrorCategory('PAINT', LogLevel.warning);
     }
 
     // Gesture errors
     if (library.contains('gesture')) {
-      return _ErrorCategory('GESTURE', LogLevel.warning);
+      return const _ErrorCategory('GESTURE', LogLevel.warning);
     }
 
-    return _ErrorCategory('FRAMEWORK', LogLevel.error);
+    return const _ErrorCategory('FRAMEWORK', LogLevel.error);
   }
 
   static void _printEntry(LogEntry entry) {
