@@ -7,6 +7,9 @@ class ConnectionsPainter extends CustomPainter {
   final int? activePortNumber;
   final double dashFlowValue;
   final bool dimOnly;
+  final int? hoveredPortNumber;
+  final double hoverAnimationValue;
+  final Set<int> selectedPorts;
 
   ConnectionsPainter({
     required this.connections,
@@ -14,6 +17,9 @@ class ConnectionsPainter extends CustomPainter {
     this.activePortNumber,
     this.dashFlowValue = 0.0,
     this.dimOnly = false,
+    this.hoveredPortNumber,
+    this.hoverAnimationValue = 0.0,
+    this.selectedPorts = const {},
   });
 
   @override
@@ -24,17 +30,48 @@ class ConnectionsPainter extends CustomPainter {
           activePortNumber != null && connection.isHighlighted;
       final bool isDimmed = activePortNumber != null && !isActive;
 
+      // Apply hover/selection offset to source to match port float animation
+      ConnectionLine paintConn = connection;
+      if (connection.portNumber != null) {
+        double offsetY = 0;
+        final double fullOffset =
+            connection.portNumber!.isOdd ? -3.0 : 3.0;
+
+        if (selectedPorts.contains(connection.portNumber)) {
+          // Selected ports are always floated — full offset
+          offsetY = fullOffset;
+        } else if (connection.portNumber == hoveredPortNumber &&
+            hoverAnimationValue > 0) {
+          // Hovered (not selected) — animated offset
+          offsetY = fullOffset * hoverAnimationValue;
+        }
+
+        if (offsetY != 0) {
+          paintConn = ConnectionLine(
+            sourceOffset: Offset(
+                connection.sourceOffset.dx,
+                connection.sourceOffset.dy + offsetY),
+            targetOffset: connection.targetOffset,
+            status: connection.status,
+            isHighlighted: connection.isHighlighted,
+            slotId: connection.slotId,
+            portNumber: connection.portNumber,
+            isConfig: connection.isConfig,
+            curveDirection: connection.curveDirection,
+            forceCurve: connection.forceCurve,
+          );
+        }
+      }
+
       if (isDimmed) {
-        // Smooth dim: paint at low opacity
         canvas.saveLayer(
             null, Paint()..color = Colors.white.withValues(alpha: 0.1));
-        connection.paint(canvas, animationValue: animationValue);
+        paintConn.paint(canvas, animationValue: animationValue);
         canvas.restore();
       } else if (isActive && !dimOnly) {
-        // Spotlight: paint with flowing dash animation
-        connection.paintSpotlit(canvas, dashFlowValue: dashFlowValue);
+        paintConn.paintSpotlit(canvas, dashFlowValue: dashFlowValue);
       } else {
-        connection.paint(canvas, animationValue: animationValue);
+        paintConn.paint(canvas, animationValue: animationValue);
       }
     }
     canvas.restore();
@@ -46,7 +83,10 @@ class ConnectionsPainter extends CustomPainter {
         oldDelegate.animationValue != animationValue ||
         oldDelegate.activePortNumber != activePortNumber ||
         oldDelegate.dashFlowValue != dashFlowValue ||
-        oldDelegate.dimOnly != dimOnly;
+        oldDelegate.dimOnly != dimOnly ||
+        oldDelegate.hoveredPortNumber != hoveredPortNumber ||
+        oldDelegate.hoverAnimationValue != hoverAnimationValue ||
+        oldDelegate.selectedPorts != selectedPorts;
   }
 }
 
@@ -56,6 +96,9 @@ class ConnectionsLayer extends StatelessWidget {
   final int? activePortNumber;
   final double dashFlowValue;
   final bool dimOnly;
+  final int? hoveredPortNumber;
+  final double hoverAnimationValue;
+  final Set<int> selectedPorts;
 
   const ConnectionsLayer({
     super.key,
@@ -64,6 +107,9 @@ class ConnectionsLayer extends StatelessWidget {
     this.activePortNumber,
     this.dashFlowValue = 0.0,
     this.dimOnly = false,
+    this.hoveredPortNumber,
+    this.hoverAnimationValue = 0.0,
+    this.selectedPorts = const {},
   });
 
   @override
@@ -75,6 +121,9 @@ class ConnectionsLayer extends StatelessWidget {
         activePortNumber: activePortNumber,
         dashFlowValue: dashFlowValue,
         dimOnly: dimOnly,
+        hoveredPortNumber: hoveredPortNumber,
+        hoverAnimationValue: hoverAnimationValue,
+        selectedPorts: selectedPorts,
       ),
     );
   }

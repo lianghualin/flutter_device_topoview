@@ -65,6 +65,9 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   // Dash flow animation for connection lines
   late AnimationController _dashFlowController;
 
+  // Hover animation for connection line source offset (matches port float)
+  late AnimationController _hoverOffsetController;
+
   // Computed layout state
   late CenterDeviceLayout _centerLayout;
   List<Port> _ports = [];
@@ -98,6 +101,10 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
+    _hoverOffsetController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
     // Don't start yet — only runs when spotlight is active
     _stackedSwitchSelectedPart = widget.initialStackedSwitchPart ?? 0;
     _createStrategy();
@@ -107,6 +114,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   @override
   void dispose() {
     _dashFlowController.dispose();
+    _hoverOffsetController.dispose();
     super.dispose();
   }
 
@@ -476,13 +484,18 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
       _updateHighlightStates();
       _updateDashFlow();
     });
+    _hoverOffsetController.forward(from: 0);
   }
 
   void _handlePortHoverExit() {
-    setState(() {
-      _hoveredPortNumber = null;
-      _updateHighlightStates();
-      _updateDashFlow();
+    _hoverOffsetController.reverse().then((_) {
+      if (mounted) {
+        setState(() {
+          _hoveredPortNumber = null;
+          _updateHighlightStates();
+          _updateDashFlow();
+        });
+      }
     });
   }
 
@@ -667,11 +680,14 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                     ),
                   // Layer 2: Explore connections
                   AnimatedBuilder(
-                    animation: _dashFlowController,
+                    animation: Listenable.merge([_dashFlowController, _hoverOffsetController]),
                     builder: (context, _) => ConnectionsLayer(
                       connections: _exploreConnections,
                       activePortNumber: _switchActivePort,
                       dashFlowValue: widget.enableAnimations ? _dashFlowController.value : 0,
+                      hoveredPortNumber: _hoveredPortNumber,
+                      hoverAnimationValue: _hoverOffsetController.value,
+                      selectedPorts: _selectedPorts,
                     ),
                   ),
                   // Layer 3: Explore floating devices
@@ -686,12 +702,15 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                   // Layer 4: Outer ring connections (config/baseline)
                   if (widget.showOuterRing)
                     AnimatedBuilder(
-                      animation: _dashFlowController,
+                      animation: Listenable.merge([_dashFlowController, _hoverOffsetController]),
                       builder: (context, _) => ConnectionsLayer(
                         connections: _baseConnections,
                         activePortNumber: _switchActivePort,
                         dashFlowValue: widget.enableAnimations ? _dashFlowController.value : 0,
                         dimOnly: true,
+                        hoveredPortNumber: _hoveredPortNumber,
+                        hoverAnimationValue: _hoverOffsetController.value,
+                        selectedPorts: _selectedPorts,
                       ),
                     ),
                   // Layer 5: Outer ring floating devices (config/baseline)
@@ -712,6 +731,52 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       onPortHoverExit: null,
                       onPortTap: null,
                       isConfig: widget.isConfig,
+                    ),
+                  // Layer 7: Port number overlay (switch/host — on top of everything)
+                  if (widget.deviceType != DeviceType.agent && _ports.isNotEmpty)
+                    AnimatedBuilder(
+                      animation: _hoverOffsetController,
+                      builder: (context, _) => Stack(
+                        children: [
+                          for (final p in _ports)
+                            if (!p.isInvalid && p.showLabel)
+                              () {
+                                double offsetY = 0;
+                                if (p.portNumber != null) {
+                                  final fullOffset = p.portNumber!.isOdd ? -3.0 : 3.0;
+                                  if (_selectedPorts.contains(p.portNumber)) {
+                                    offsetY = fullOffset;
+                                  } else if (p.portNumber == _hoveredPortNumber) {
+                                    offsetY = fullOffset * _hoverOffsetController.value;
+                                  }
+                                }
+                                return Positioned(
+                                  left: p.position.dx,
+                                  top: p.position.dy + offsetY,
+                                  child: IgnorePointer(
+                                    child: SizedBox(
+                                      width: p.width,
+                                      height: p.height,
+                                      child: Center(
+                                        child: Text(
+                                          p.label ??
+                                              (p.portNumber != null
+                                                  ? '${p.portNumber}'
+                                                  : ''),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }(),
+                        ],
+                      ),
                     ),
                 ],
               ),
