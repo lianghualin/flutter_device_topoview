@@ -302,18 +302,14 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
               },
               child: GestureDetector(
                 onTap: () {
+                  // Internal selection: toggle port spotlight
+                  if (widget.onDeviceSelected != null) {
+                    widget.onDeviceSelected!(widget.deviceId);
+                  }
+                  // External callback: notify consumer
                   if (widget.onDeviceTappedExternally != null) {
                     widget.onDeviceTappedExternally!(
                         widget.label, widget.deviceType, widget.deviceId);
-                  } else {
-                    int currentDeviceId = widget.deviceId;
-                    if (widget.onClearPortHighlight != null) {
-                      widget.onClearPortHighlight!(
-                          deviceToKeepHighlighted: currentDeviceId);
-                    }
-                    if (widget.onDeviceSelected != null) {
-                      widget.onDeviceSelected!(currentDeviceId);
-                    }
                   }
                 },
                 child: Transform.scale(

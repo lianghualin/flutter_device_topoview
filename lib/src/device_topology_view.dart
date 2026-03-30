@@ -677,6 +677,8 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                   // Layer 3: Explore floating devices
                   DevLayer(
                     devices: _exploreDevices,
+                    onDeviceSelected: _handleDeviceSelected,
+                    onClearPortHighlight: _handleClearPortHighlight,
                     onExternalDeviceSelected: widget.onDeviceSelected,
                     activePortNumber: _switchActivePort,
                     enableAnimations: widget.enableAnimations,
