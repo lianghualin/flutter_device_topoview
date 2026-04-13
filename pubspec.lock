@@ -66,10 +66,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_host_device
-      sha256: "1175f0d32fe39973246a596da14f63df5d5797b29dcaf1cf7787802c7ba748d6"
+      sha256: c6cd7f78e842e3fe990157a9cf1bdd3d7fc8faae5f14f4842570bcae733a87f9
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.3.2"
   flutter_switch_device:
     dependency: "direct main"
     description:

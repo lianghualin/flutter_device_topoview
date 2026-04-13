@@ -38,13 +38,13 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
     final double minDimension = min(width, height);
     final double centerSize = minDimension * 0.3;
 
-    // Dynamic vertical position: fewer devices → higher, more → lower
-    // 1-2 devices: 55%, 3-4: 63%, 5-6: 72%
+    // Dynamic vertical position: push host down to leave room above for port arc + devices
+    // 1-2 devices: 68%, 3-4: 72%, 5+: 78%
     final double centerYFactor = deviceCount <= 2
-        ? 0.55
+        ? 0.68
         : deviceCount <= 4
-            ? 0.63
-            : 0.72;
+            ? 0.72
+            : 0.78;
 
     final double centerX = width / 2;
     final double centerY = height * centerYFactor;
@@ -78,10 +78,10 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
 
     // Compute centerYFactor consistently with calculateCenterLayout
     final double centerYFactor = deviceCount <= 2
-        ? 0.55
+        ? 0.68
         : deviceCount <= 4
-            ? 0.63
-            : 0.72;
+            ? 0.72
+            : 0.78;
 
     // Use the package's layout engine for port center positions.
     // Returns positions in viewport coordinates (NOT relative to center).
@@ -170,7 +170,8 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
     final double baselineDistance = minDimension * baseDistFactor;
 
     // Margin to keep devices within viewport bounds
-    final double visualPadding = (deviceSize + 30) / 2 + 10;
+    // Use visual radius so the full ring stays inside the viewport
+    final double visualPadding = (deviceSize + 30) / 2;
 
     // ---- Baseline devices ----
     final List<PortDevice> validDevices = devices

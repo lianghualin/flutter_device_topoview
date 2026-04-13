@@ -267,36 +267,30 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
               ],
             );
           } else {
-            deviceContent = SizedBox(
-              width: visualSize,
-              height: visualSize,
-              child: Stack(
-                alignment: Alignment.topCenter,
-                children: [
-                  centerContent,
-                  Positioned(
-                    bottom: 4,
-                    left: 0,
-                    right: 0,
-                    child: Opacity(
-                      opacity: textOpacity,
-                      child: buildLabel(),
-                    ),
-                  ),
-                ],
-              ),
+            deviceContent = Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                centerContent,
+                const SizedBox(height: 4),
+                Opacity(
+                  opacity: textOpacity,
+                  child: buildLabel(),
+                ),
+              ],
             );
           }
 
           Widget content = MouseRegion(
               cursor: SystemMouseCursors.click,
               onEnter: (_) {
-                if (!(widget.isHighlighted || isSelected)) {
+                if (widget.enableAnimations &&
+                    !(widget.isHighlighted || isSelected)) {
                   _controller.forward();
                 }
               },
               onExit: (_) {
-                if (!(widget.isHighlighted || isSelected)) {
+                if (widget.enableAnimations &&
+                    !(widget.isHighlighted || isSelected)) {
                   _controller.reverse();
                 }
               },

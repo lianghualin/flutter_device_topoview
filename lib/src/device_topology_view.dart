@@ -534,18 +534,6 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
     });
   }
 
-  void _handleClearPortHighlight({int? deviceToKeepHighlighted}) {
-    setState(() {
-      _selectedPorts.clear();
-      _hoveredPortNumber = null;
-      if (deviceToKeepHighlighted != null) {
-        // Device ID is the same as connectedPortNum, so add it as a selected port
-        _selectedPorts.add(deviceToKeepHighlighted);
-      }
-      _updateHighlightStates();
-      _updateDashFlow();
-    });
-  }
 
   // ---------------------------------------------------------------------------
   // Host port status / label conversion
@@ -640,7 +628,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
               height: _contentHeight,
               child: Stack(
                 children: [
-                  // Layer 1: Center device (+ ports for switch/host mode)
+                  // Layer 1: Center device (switch renders body+ports here; host/agent render body only here)
                   if (widget.deviceType == DeviceType.switch_ &&
                       widget.format is SwitchFormat)
                     SwitchDeviceView(
@@ -655,21 +643,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       onStackedPartChanged: _handleStackedPartChanged,
                       selectedPorts: _selectedPorts,
                     )
-                  else if (widget.deviceType == DeviceType.host)
-                    HostDeviceView(
-                      size: Size(_contentWidth, _contentHeight),
-                      portCount: widget.portStatusMap.length,
-                      portStatuses: _buildHostPortStatuses(),
-                      portLabels: _buildHostPortLabels(),
-                      isConfig: widget.isConfig,
-                      centerLabel: widget.centerLabel,
-                      centerYFactor: widget.portDevices.length <= 2
-                          ? 0.55
-                          : widget.portDevices.length <= 4
-                              ? 0.63
-                              : 0.72,
-                    )
-                  else
+                  else if (widget.deviceType != DeviceType.host)
                     CenterDeviceLayer(
                       layout: _centerLayout,
                       format: widget.format,
@@ -693,11 +667,13 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                   // Layer 3: Explore floating devices
                   DevLayer(
                     devices: _exploreDevices,
-                    onDeviceSelected: _handleDeviceSelected,
-                    onClearPortHighlight: _handleClearPortHighlight,
+                    onDeviceSelected: widget.deviceType == DeviceType.switch_
+                        ? _handleDeviceSelected
+                        : null,
                     onExternalDeviceSelected: widget.onDeviceSelected,
                     activePortNumber: _switchActivePort,
-                    enableAnimations: widget.enableAnimations,
+                    enableAnimations: widget.deviceType == DeviceType.switch_
+                        && widget.enableAnimations,
                   ),
                   // Layer 4: Outer ring connections (config/baseline)
                   if (widget.showOuterRing)
@@ -713,15 +689,37 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                         selectedPorts: _selectedPorts,
                       ),
                     ),
+                  // Layer 4.5: Host device (after lines so ports are in front)
+                  if (widget.deviceType == DeviceType.host)
+                    IgnorePointer(
+                      child: HostDeviceView(
+                        size: Size(_contentWidth, _contentHeight),
+                        portCount: widget.portStatusMap.length,
+                        portStatuses: _buildHostPortStatuses(),
+                        portLabels: _buildHostPortLabels(),
+                        isConfig: widget.isConfig,
+                        centerLabel: widget.centerLabel,
+                        enablePortHoverAnimation: false,
+                        showPortIconText: false,
+                        showPortLabels: true,
+                        centerYFactor: widget.portDevices.length <= 2
+                            ? 0.68
+                            : widget.portDevices.length <= 4
+                                ? 0.72
+                                : 0.78,
+                      ),
+                    ),
                   // Layer 5: Outer ring floating devices (config/baseline)
                   if (widget.showOuterRing)
                     DevLayer(
                       devices: _baseDevices,
-                      onDeviceSelected: _handleDeviceSelected,
-                      onClearPortHighlight: _handleClearPortHighlight,
+                      onDeviceSelected: widget.deviceType == DeviceType.switch_
+                          ? _handleDeviceSelected
+                          : null,
                       onExternalDeviceSelected: widget.onDeviceSelected,
                       activePortNumber: _switchActivePort,
-                      enableAnimations: widget.enableAnimations,
+                      enableAnimations: widget.deviceType == DeviceType.switch_
+                          && widget.enableAnimations,
                     ),
                   // Layer 6: Ports (agent only; Switch/HostDeviceView render their own)
                   if (widget.deviceType == DeviceType.agent)
@@ -732,8 +730,8 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       onPortTap: null,
                       isConfig: widget.isConfig,
                     ),
-                  // Layer 7: Port number overlay (switch/host — on top of everything)
-                  if (widget.deviceType != DeviceType.agent && _ports.isNotEmpty)
+                  // Layer 7: Port number overlay (switch only — host uses package labels)
+                  if (widget.deviceType == DeviceType.switch_ && _ports.isNotEmpty)
                     AnimatedBuilder(
                       animation: _hoverOffsetController,
                       builder: (context, _) => Stack(
