@@ -1,3 +1,8 @@
+## 1.3.2
+
+### Bug Fixes
+- **Baseline connection alignment**: Dashed baseline connection lines now target the center of the device icon instead of the center of the status halo. Removed erroneous bottom padding from `buildDeviceIcon()` in all device types (host, switch, agent, unknown) that shifted icons 8px above the halo center.
+
 ## 1.3.1
 
 ### Bug Fixes
