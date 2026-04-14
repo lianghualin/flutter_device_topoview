@@ -180,12 +180,18 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
     Size viewportSize,
     CenterDeviceLayout center,
     List<PortDevice> devices,
-    List<Port> ports,
-  ) {
+    List<Port> ports, {
+    Size? actualViewport,
+  }) {
     final double contentWidth =
         viewportSize.width < _minWidth ? _minWidth : viewportSize.width;
     final double contentHeight =
         viewportSize.height < _minHeight ? _minHeight : viewportSize.height;
+
+    // For icon sizing: use the actual visible viewport so icons look
+    // proportional to what the user sees, not the inflated canvas.
+    final double visibleWidth = actualViewport?.width ?? contentWidth;
+    final double visibleHeight = actualViewport?.height ?? contentHeight;
 
     // Filter devices based on config mode and stacked switch state
     List<PortDevice> filteredDevices = List.from(devices);
@@ -242,7 +248,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
 
     // --- Device size by density tier ---
     final int deviceCount = filteredDevices.length;
-    final double minDimension = math.min(contentWidth, contentHeight);
+    final double canvasMinDim = math.min(contentWidth, contentHeight);
 
     double sizeFactor;
     double minSize, maxSize;
@@ -259,8 +265,19 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
       minSize = 40;
       maxSize = 75;
     }
-    final double baseDeviceSize =
-        (minDimension * sizeFactor).clamp(minSize, maxSize);
+    double baseDeviceSize =
+        (canvasMinDim * sizeFactor).clamp(minSize, maxSize);
+
+    // When the viewport is smaller than the canvas, boost icon size so
+    // devices stay prominent in the visible area. The canvas is rendered
+    // at 1:1 scale and clipped — icons that were "fine" on 800px look
+    // sparse when only 300px is visible.
+    final double viewportMinDim = math.min(visibleWidth, visibleHeight);
+    if (viewportMinDim < canvasMinDim) {
+      final double boost =
+          math.sqrt(canvasMinDim / viewportMinDim).clamp(1.0, 1.4);
+      baseDeviceSize = (baseDeviceSize * boost).clamp(minSize, maxSize * 1.3);
+    }
 
     // --- Compute ring gap and explore size upfront ---
     final double exploreDeviceSize = baseDeviceSize * 0.7;

@@ -1,3 +1,8 @@
+## 1.3.1
+
+### Bug Fixes
+- **Viewport-aware icon sizing**: Floating device icons now scale up when the widget is used in a constrained viewport (e.g., 1200x300 with sidebar/header). Previously, icons were sized for the inflated internal canvas (1500x800) and looked disproportionately small in the visible area. Icons now boost up to 1.4x in tight viewports while remaining unchanged at full screen.
+
 ## 1.3.0
 
 ### Breaking Changes

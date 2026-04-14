@@ -45,12 +45,17 @@ abstract class DeviceLayoutStrategy {
   );
 
   /// Compute floating device positions (both baseline and explore tiers).
+  ///
+  /// [actualViewport] is the real visible viewport size (before any
+  /// minimum-dimension inflation). Strategies may use it to size icons
+  /// relative to what the user actually sees rather than the inflated canvas.
   DevicePositions calculateDevicePositions(
     Size viewportSize,
     CenterDeviceLayout center,
     List<PortDevice> devices,
-    List<Port> ports,
-  );
+    List<Port> ports, {
+    Size? actualViewport,
+  });
 
   /// Build DevFloat widget instances from positioned devices.
   List<DevFloat> buildFloatingDevices(

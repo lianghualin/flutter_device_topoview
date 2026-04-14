@@ -182,7 +182,8 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
 
     // Step 3: Calculate device positions
     _devicePositions = _strategy.calculateDevicePositions(
-        viewportSize, _centerLayout, widget.portDevices, _ports);
+        viewportSize, _centerLayout, widget.portDevices, _ports,
+        actualViewport: widget.size);
 
     // Step 4: Build floating devices
     final allDevFloats =

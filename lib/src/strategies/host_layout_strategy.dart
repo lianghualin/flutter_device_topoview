@@ -137,8 +137,9 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
     Size viewportSize,
     CenterDeviceLayout center,
     List<PortDevice> devices,
-    List<Port> ports,
-  ) {
+    List<Port> ports, {
+    Size? actualViewport,
+  }) {
     final double minDimension = min(viewportSize.width, viewportSize.height);
 
     // Auto-fit: scale device size based on device count

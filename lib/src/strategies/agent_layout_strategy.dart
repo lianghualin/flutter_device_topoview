@@ -153,8 +153,9 @@ class AgentLayoutStrategy extends SlotBasedLayoutStrategy {
     Size viewportSize,
     CenterDeviceLayout center,
     List<PortDevice> devices,
-    List<Port> ports,
-  ) {
+    List<Port> ports, {
+    Size? actualViewport,
+  }) {
     final double contentWidth = viewportSize.width;
     final double minDimension = min(contentWidth, viewportSize.height);
 
