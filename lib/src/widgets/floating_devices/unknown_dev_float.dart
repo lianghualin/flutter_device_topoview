@@ -100,15 +100,12 @@ class _UnknownDevFloatWidgetState
     return Container(
       width: widget.size + 30,
       height: widget.size + 30,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Center(
-          child: CustomPaint(
-            size: Size(widget.size, widget.size),
-            painter: TopoIconPainter(
-              deviceType: TopoDeviceType.unknown,
-              style: TopoIconStyle.lnm,
-            ),
+      child: Center(
+        child: CustomPaint(
+          size: Size(widget.size, widget.size),
+          painter: TopoIconPainter(
+            deviceType: TopoDeviceType.unknown,
+            style: TopoIconStyle.lnm,
           ),
         ),
       ),

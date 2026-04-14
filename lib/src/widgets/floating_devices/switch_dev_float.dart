@@ -108,15 +108,12 @@ class _SwitchDevFloatWidgetState
         color: backgroundColor,
         shape: BoxShape.circle,
       ),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Center(
-          child: CustomPaint(
-            size: Size(widget.size, widget.size),
-            painter: TopoIconPainter(
-              deviceType: TopoDeviceType.switch_,
-              style: TopoIconStyle.lnm,
-            ),
+      child: Center(
+        child: CustomPaint(
+          size: Size(widget.size, widget.size),
+          painter: TopoIconPainter(
+            deviceType: TopoDeviceType.switch_,
+            style: TopoIconStyle.lnm,
           ),
         ),
       ),
