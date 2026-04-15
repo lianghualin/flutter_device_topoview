@@ -300,7 +300,9 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
                   if (widget.onDeviceSelected != null) {
                     widget.onDeviceSelected!(widget.deviceId);
                   }
-                  // External callback: notify consumer
+                },
+                onDoubleTap: () {
+                  // External callback: navigate to device page
                   if (widget.onDeviceTappedExternally != null) {
                     widget.onDeviceTappedExternally!(
                         widget.label, widget.deviceType, widget.deviceId);

@@ -1,3 +1,11 @@
+## 1.3.3
+
+### Improvements
+- **Double-tap to navigate**: Single tap on a floating device now only toggles port spotlight; double-tap triggers the external navigation callback (`onDeviceTappedExternally`)
+
+### Dependencies
+- Upgraded `flutter_device_ring` to `^0.3.0`
+
 ## 1.3.2
 
 ### Bug Fixes
