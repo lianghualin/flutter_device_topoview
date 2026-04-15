@@ -1,3 +1,12 @@
+## 1.3.4
+
+### Bug Fixes
+- **Label alignment for non-ring devices**: Wrapped the Column layout in a `SizedBox(width: visualSize)` so long device labels no longer shift the icon center horizontally, keeping connection line endpoints aligned
+- **Bottom label clipping**: Added extra bottom margin to device position clamping in all layout strategies (switch, host, agent) so labels near the viewport edge are fully visible
+
+### New Parameters
+- **`labelBottomPadding`**: Configurable extra bottom margin (default `40.0`) to prevent device labels from being clipped at the viewport edge. Increase for longer device names.
+
 ## 1.3.3
 
 ### Improvements

@@ -36,6 +36,7 @@ class DeviceTopologyView extends StatefulWidget {
     this.onStackedSwitchPartChanged,
     this.enableAnimations = true,
     this.showOuterRing = true,
+    this.labelBottomPadding = 40.0,
     super.key,
   });
 
@@ -52,6 +53,10 @@ class DeviceTopologyView extends StatefulWidget {
   final void Function(int part)? onStackedSwitchPartChanged;
   final bool enableAnimations;
   final bool showOuterRing;
+
+  /// Extra bottom margin (in logical pixels) to prevent device labels from
+  /// being clipped at the viewport edge. Increase for longer device names.
+  final double labelBottomPadding;
 
   @override
   State<DeviceTopologyView> createState() => _DeviceTopologyViewState();
@@ -140,15 +145,19 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
       case DeviceType.host:
         _strategy = HostLayoutStrategy(
           deviceCount: widget.portDevices.length,
+          labelBottomPadding: widget.labelBottomPadding,
         );
         break;
       case DeviceType.agent:
-        _strategy = AgentLayoutStrategy();
+        _strategy = AgentLayoutStrategy(
+          labelBottomPadding: widget.labelBottomPadding,
+        );
         break;
       case DeviceType.switch_:
         _strategy = SwitchLayoutStrategy(
           isConfig: widget.isConfig,
           stackedSwitchSelectedPart: _stackedSwitchSelectedPart,
+          labelBottomPadding: widget.labelBottomPadding,
         );
         break;
     }

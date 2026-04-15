@@ -267,16 +267,19 @@ abstract class DevFloatWidgetState<T extends DevFloatWidget> extends State<T>
               ],
             );
           } else {
-            deviceContent = Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                centerContent,
-                const SizedBox(height: 4),
-                Opacity(
-                  opacity: textOpacity,
-                  child: buildLabel(),
-                ),
-              ],
+            deviceContent = SizedBox(
+              width: visualSize,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  centerContent,
+                  const SizedBox(height: 4),
+                  Opacity(
+                    opacity: textOpacity,
+                    child: buildLabel(),
+                  ),
+                ],
+              ),
             );
           }
 

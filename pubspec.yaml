@@ -1,6 +1,6 @@
 name: device_topology_view
 description: A Flutter widget for visualizing device-centric network topologies.
-version: 1.3.3
+version: 1.3.4
 repository: https://github.com/lianghualin/device_topology_view
 
 environment:

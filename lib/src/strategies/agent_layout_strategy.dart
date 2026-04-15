@@ -17,6 +17,10 @@ import 'slot_based_layout_strategy.dart';
 /// center device. Floating switch devices (max 2) are positioned by slot
 /// group -- slotA on the left, slotB on the right.
 class AgentLayoutStrategy extends SlotBasedLayoutStrategy {
+  final double labelBottomPadding;
+
+  AgentLayoutStrategy({this.labelBottomPadding = 40.0});
+
   // ---------------------------------------------------------------------------
   // calculateCenterLayout
   // ---------------------------------------------------------------------------
@@ -249,7 +253,7 @@ class AgentLayoutStrategy extends SlotBasedLayoutStrategy {
   Offset _clampToViewport(Offset position, Size viewport, double margin) {
     return Offset(
       position.dx.clamp(margin, viewport.width - margin),
-      position.dy.clamp(margin, viewport.height - margin),
+      position.dy.clamp(margin, viewport.height - margin - labelBottomPadding),
     );
   }
 

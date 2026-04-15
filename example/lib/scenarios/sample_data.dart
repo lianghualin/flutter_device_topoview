@@ -19,6 +19,7 @@ final List<Scenario> allScenarios = [
   _switchScenario(label: 'Switch 28P', format: const Switch28P(), totalPorts: 28),
   _switchScenario(label: 'Switch 30P (Stacked)', format: const Switch30PStacked(), totalPorts: 48),
   _switchScenario(label: 'Switch 48P (Stacked)', format: const Switch48PStacked(), totalPorts: 48),
+  _switchLongNamesScenario(),
 ];
 
 Scenario _hostScenario(int deviceCount) {
@@ -61,6 +62,50 @@ Scenario _agentScenario(int portCount) {
     portDevices: devices,
     portStatusMap: portStatusMap,
     centerLabel: 'Agent-Node',
+  );
+}
+
+/// Switch scenario with long device names to test label-width alignment.
+/// Toggle config mode to see all devices as non-ring baseline devices.
+Scenario _switchLongNamesScenario() {
+  const totalPorts = 24;
+  const longNames = [
+    'Probe-MMI-Switch-Alpha',
+    'Industrial-Gateway-01',
+    'Probe-Host-Controller',
+    'SCADA-RTU-Module-24P',
+    'Firewall-Zone-Bridge',
+    'Protocol-Converter-X3',
+  ];
+
+  final devices = List.generate(totalPorts, (i) {
+    final portNum = i + 1;
+    final name = longNames[i % longNames.length];
+    // All baseline-only (connectionStatus 0, no explore) so they use
+    // the Column layout — the path affected by the bug.
+    return PortDevice(
+      portId: portNum.toString(),
+      portNumber: portNum,
+      deviceName: '$name-$portNum',
+      deviceType: 'Switch',
+      deviceIp: '10.0.0.$portNum',
+      connectionStatus: 0,
+      deviceStatus: true,
+    );
+  });
+
+  final portStatusMap = <String, PortStatus>{};
+  for (int i = 1; i <= totalPorts; i++) {
+    portStatusMap[i.toString()] = PortStatus.up;
+  }
+
+  return Scenario(
+    label: 'Switch 24P (Long Names)',
+    deviceType: DeviceType.switch_,
+    format: const Switch24P(),
+    portDevices: devices,
+    portStatusMap: portStatusMap,
+    centerLabel: 'Core-Switch',
   );
 }
 

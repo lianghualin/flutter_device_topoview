@@ -25,6 +25,7 @@ import 'device_layout_strategy.dart';
 class SwitchLayoutStrategy extends DeviceLayoutStrategy {
   final bool isConfig;
   final int stackedSwitchSelectedPart;
+  final double labelBottomPadding;
 
   static const double _minWidth = 1500.0;
   static const double _minHeight = 800.0;
@@ -32,6 +33,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
   SwitchLayoutStrategy({
     this.isConfig = false,
     this.stackedSwitchSelectedPart = 0,
+    this.labelBottomPadding = 40.0,
   });
 
   // ---------------------------------------------------------------------------
@@ -287,6 +289,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
     // --- Two-ring radius calculation (sized from outside in) ---
     final double exploreMargin = (exploreDeviceSize + 30) / 2 + 10;
     final double baselineMargin = (baseDeviceSize + 30) / 2 + 10;
+    final double labelPadding = labelBottomPadding;
 
     // Available space from ellipse center to viewport edge
     final double availableUp = ellipseCY - exploreMargin;
@@ -430,7 +433,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
         double x = ellipseCX + radiusX * math.cos(rad);
         double y = ellipseCY - radiusY * math.sin(rad);
         x = x.clamp(baselineMargin, contentWidth - baselineMargin);
-        y = y.clamp(baselineMargin, contentHeight - baselineMargin);
+        y = y.clamp(baselineMargin, contentHeight - baselineMargin - labelPadding);
         innerPositioned.add(PositionedDevice(
           position: Offset(x, y), size: deviceSize, device: dev));
       } else if (hasMismatchExplore) {
@@ -439,7 +442,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
         double x = ellipseCX + outerRadiusX * math.cos(outerRad);
         double y = ellipseCY - outerRadiusY * math.sin(outerRad);
         x = x.clamp(exploreMargin, contentWidth - exploreMargin);
-        y = y.clamp(exploreMargin, contentHeight - exploreMargin);
+        y = y.clamp(exploreMargin, contentHeight - exploreMargin - labelPadding);
         outerPositioned.add(PositionedDevice(
           position: Offset(x, y), size: exploreDeviceSize, device: dev));
       } else {
@@ -448,7 +451,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
         double x = ellipseCX + outerRadiusX * math.cos(outerRad);
         double y = ellipseCY - outerRadiusY * math.sin(outerRad);
         x = x.clamp(exploreMargin, contentWidth - exploreMargin);
-        y = y.clamp(exploreMargin, contentHeight - exploreMargin);
+        y = y.clamp(exploreMargin, contentHeight - exploreMargin - labelPadding);
         outerPositioned.add(PositionedDevice(
           position: Offset(x, y), size: exploreDeviceSize, device: dev));
       }
@@ -464,7 +467,7 @@ class SwitchLayoutStrategy extends DeviceLayoutStrategy {
       double x = ellipseCX + radiusX * math.cos(rad);
       double y = ellipseCY - radiusY * math.sin(rad);
       x = x.clamp(baselineMargin, contentWidth - baselineMargin);
-      y = y.clamp(baselineMargin, contentHeight - baselineMargin);
+      y = y.clamp(baselineMargin, contentHeight - baselineMargin - labelPadding);
 
       double deviceSize = baseDeviceSize;
       if (device.deviceType != 'Switch') {

@@ -18,8 +18,9 @@ import 'slot_based_layout_strategy.dart';
 /// with smaller size and reduced visual weight.
 class HostLayoutStrategy extends SlotBasedLayoutStrategy {
   final int deviceCount;
+  final double labelBottomPadding;
 
-  HostLayoutStrategy({this.deviceCount = 1});
+  HostLayoutStrategy({this.deviceCount = 1, this.labelBottomPadding = 40.0});
 
   // ---------------------------------------------------------------------------
   // calculateCenterLayout
@@ -284,7 +285,7 @@ class HostLayoutStrategy extends SlotBasedLayoutStrategy {
   Offset _clampToViewport(Offset position, Size viewport, double margin) {
     return Offset(
       position.dx.clamp(margin, viewport.width - margin),
-      position.dy.clamp(margin, viewport.height - margin),
+      position.dy.clamp(margin, viewport.height - margin - labelBottomPadding),
     );
   }
 
