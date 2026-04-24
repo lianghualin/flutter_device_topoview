@@ -1,16 +1,22 @@
-## 1.4.0
+## 1.5.0
 
 ### New Features
-- **Rectangle switch layout (`SwitchLayoutMode.rectangle`)**: New opt-in layout for `DeviceType.switch_` that arranges floating devices in column sections above and below the chassis instead of two concentric rings. Connected devices are distributed evenly across the full viewport width; connection lines slant from each port on the chassis to its device column. Pass `switchLayoutMode: SwitchLayoutMode.rectangle` on `DeviceTopologyView` to enable. The default `SwitchLayoutMode.circle` preserves today's behavior.
+- **Rectangle switch layout (`SwitchLayoutMode.rectangle`)**: New opt-in layout for `DeviceType.switch_` that arranges floating devices in column sections above and below the chassis instead of two concentric rings. Only ports with a connected device get a column; those columns are distributed evenly across the full viewport width with a small edge margin, and connection lines slant from each port on the chassis to its device column. Pass `switchLayoutMode: SwitchLayoutMode.rectangle` on `DeviceTopologyView` to enable. The default `SwitchLayoutMode.circle` preserves the original behavior — existing callers are unaffected.
+- **Four connection situations preserved**: green (matched), black dashed (configured-only), red (probed / explore-only), and black+red (mismatch) all render in rectangle mode. In the mismatch case, the baseline line curves around the actual device icon.
+- **Stacked-switch handling**: On `Switch30PStacked`–`Switch48PStacked`, rectangle mode hides the unused half of the chassis so device columns only surround the active part.
+- **Config mode**: `isConfig: true` in rectangle mode collapses to baseline-only columns on the outer row with straight grey-dashed lines, mirroring circle-mode semantics.
 
 ### New API
 - `SwitchLayoutMode` enum exported from `package:device_topology_view/device_topology_view.dart`.
 - `DeviceTopologyView.switchLayoutMode` parameter (defaults to `SwitchLayoutMode.circle`).
 
+### Layout tuning
+- Chassis is vertically centered in rectangle mode (the circle strategy's asymmetric offset is specific to the ring layout).
+- Actual devices anchor close to the chassis edge (top section: 15 px gap; bottom section: flush) so the port→actual line reads as a short vertical link. Baseline icons sit in the outer quarter of their section, near the screen edge.
+
 ### Internal
-- Added `SwitchRectangleLayoutStrategy` alongside `SwitchLayoutStrategy`. Circle rendering is unchanged.
-- Rectangle mode centers the chassis vertically via its own `calculateCenterLayout` override.
-- Rectangle mode on stacked switches hides the unused chassis half with a clip overlay.
+- Added `SwitchRectangleLayoutStrategy` alongside `SwitchLayoutStrategy`. Circle rendering is entirely unchanged.
+- Rectangle mode overrides `calculateCenterLayout` to center the chassis and generates context-sensitive curve flags on connection lines (baseline curve only when the same port also has an actual device).
 
 ## 1.3.4
 

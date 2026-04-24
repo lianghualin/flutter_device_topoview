@@ -22,7 +22,7 @@ A Flutter widget for visualizing device-centric network topologies with interact
 
 ```yaml
 dependencies:
-  device_topology_view: ^1.3.4
+  device_topology_view: ^1.5.0
 ```
 
 ## Quick Start
@@ -55,6 +55,31 @@ DeviceTopologyView(
 ```
 
 **Available presets**: `Switch6P`, `Switch8P`, `Switch10P`, `Switch12P`, `Switch14P`, `Switch16P`, `Switch18P`, `Switch20P`, `Switch22P`, `Switch24P`, `Switch26P`, `Switch28P`, `Switch30PStacked`, `Switch32PStacked`, `Switch34PStacked`, `Switch36PStacked`, `Switch38PStacked`, `Switch40PStacked`, `Switch42PStacked`, `Switch44PStacked`, `Switch46PStacked`, `Switch48PStacked`
+
+#### Switch layout mode
+
+Switch topologies support two layout modes:
+
+- `SwitchLayoutMode.circle` (default) — floating devices arranged in two concentric rings around the chassis. Inner ring holds real/discovered devices, outer ring holds baseline/configured devices.
+- `SwitchLayoutMode.rectangle` — floating devices arranged in column sections above and below the chassis. Each connected port gets one column; devices spread evenly across the full viewport width, with the actual device anchored close to the chassis edge and the baseline device sitting near the screen edge.
+
+```dart
+DeviceTopologyView(
+  size: Size(1500, 1000),
+  deviceType: DeviceType.switch_,
+  format: Switch28P(),
+  portDevices: portDevices,
+  portStatusMap: portStatusMap,
+  centerLabel: 'Core-Switch',
+  switchLayoutMode: SwitchLayoutMode.rectangle, // opt-in, defaults to .circle
+)
+```
+
+All other parameters — `isConfig`, `onDeviceSelected`, `initialStackedSwitchPart`, `onStackedSwitchPartChanged`, `enableAnimations`, `showOuterRing`, `labelBottomPadding` — work identically in both modes. The parameter is ignored for `DeviceType.host` and `DeviceType.agent`.
+
+**When to use rectangle mode:** dense topologies where seeing each port's connection as a clear vertical column (rather than an angular ring spoke) is easier to read, or when the viewport is wider than it is tall so the ring layout pushes icons off-screen.
+
+**Stacked switches:** in rectangle mode, only the selected part's chassis is visible. Use `initialStackedSwitchPart` / `onStackedSwitchPartChanged` as you would in circle mode; the inactive half is hidden automatically.
 
 ### Host
 
@@ -131,6 +156,7 @@ enum DeviceType { host, agent, switch_ }
 | `enableAnimations` | `bool` | `true` | Enable/disable animations |
 | `showOuterRing` | `bool` | `true` | Show baseline (outer ring) connections |
 | `labelBottomPadding` | `double` | `40.0` | Extra bottom margin to prevent device labels from being clipped |
+| `switchLayoutMode` | `SwitchLayoutMode` | `SwitchLayoutMode.circle` | Switch-only: `.circle` (two rings) or `.rectangle` (column sections above/below the chassis). Ignored for host/agent. |
 
 ## Dependencies
 
