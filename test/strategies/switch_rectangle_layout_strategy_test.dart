@@ -467,4 +467,108 @@ void main() {
       expect(baseLines.first.forceCurve, isFalse);
     });
   });
+
+  group('SwitchRectangleLayoutStrategy stacked-switch filtering', () {
+    test('stackedSwitchSelectedPart=1 keeps only ports 1..24 devices', () {
+      final strategy = SwitchRectangleLayoutStrategy(
+        stackedSwitchSelectedPart: 1,
+      );
+      final format = Switch48PStacked();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+      final positions = strategy.calculateDevicePositions(
+        viewportSize,
+        center,
+        [
+          PortDevice(
+              portId: 'p1', portNumber: 1, deviceName: 'A', connectionStatus: 0),
+          PortDevice(
+              portId: 'p24',
+              portNumber: 24,
+              deviceName: 'B',
+              connectionStatus: 0),
+          PortDevice(
+              portId: 'p25',
+              portNumber: 25,
+              deviceName: 'C',
+              connectionStatus: 0),
+          PortDevice(
+              portId: 'p48',
+              portNumber: 48,
+              deviceName: 'D',
+              connectionStatus: 0),
+        ],
+        ports,
+      );
+
+      final keptPorts = positions.baselineDevices
+          .map((d) => d.device.portNumber)
+          .whereType<int>()
+          .toSet();
+      expect(keptPorts, {1, 24});
+    });
+
+    test('stackedSwitchSelectedPart=2 keeps only ports 25..48 devices', () {
+      final strategy = SwitchRectangleLayoutStrategy(
+        stackedSwitchSelectedPart: 2,
+      );
+      final format = Switch48PStacked();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+      final positions = strategy.calculateDevicePositions(
+        viewportSize,
+        center,
+        [
+          PortDevice(
+              portId: 'p1', portNumber: 1, deviceName: 'A', connectionStatus: 0),
+          PortDevice(
+              portId: 'p25',
+              portNumber: 25,
+              deviceName: 'C',
+              connectionStatus: 0),
+          PortDevice(
+              portId: 'p48',
+              portNumber: 48,
+              deviceName: 'D',
+              connectionStatus: 0),
+        ],
+        ports,
+      );
+
+      final keptPorts = positions.baselineDevices
+          .map((d) => d.device.portNumber)
+          .whereType<int>()
+          .toSet();
+      expect(keptPorts, {25, 48});
+    });
+
+    test('stackedSwitchSelectedPart=0 removes all stacked devices', () {
+      final strategy = SwitchRectangleLayoutStrategy(
+        stackedSwitchSelectedPart: 0,
+      );
+      final format = Switch48PStacked();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+      final positions = strategy.calculateDevicePositions(
+        viewportSize,
+        center,
+        [
+          PortDevice(
+              portId: 'p1', portNumber: 1, deviceName: 'A', connectionStatus: 0),
+          PortDevice(
+              portId: 'p29',
+              portNumber: 29,
+              deviceName: 'B',
+              connectionStatus: 0),
+        ],
+        ports,
+      );
+
+      expect(positions.baselineDevices, isEmpty);
+      expect(positions.exploreDevices, isEmpty);
+    });
+  });
 }
