@@ -1,3 +1,17 @@
+## 1.4.0
+
+### New Features
+- **Rectangle switch layout (`SwitchLayoutMode.rectangle`)**: New opt-in layout for `DeviceType.switch_` that arranges floating devices in column sections above and below the chassis instead of two concentric rings. Connected devices are distributed evenly across the full viewport width; connection lines slant from each port on the chassis to its device column. Pass `switchLayoutMode: SwitchLayoutMode.rectangle` on `DeviceTopologyView` to enable. The default `SwitchLayoutMode.circle` preserves today's behavior.
+
+### New API
+- `SwitchLayoutMode` enum exported from `package:device_topology_view/device_topology_view.dart`.
+- `DeviceTopologyView.switchLayoutMode` parameter (defaults to `SwitchLayoutMode.circle`).
+
+### Internal
+- Added `SwitchRectangleLayoutStrategy` alongside `SwitchLayoutStrategy`. Circle rendering is unchanged.
+- Rectangle mode centers the chassis vertically via its own `calculateCenterLayout` override.
+- Rectangle mode on stacked switches hides the unused chassis half with a clip overlay.
+
 ## 1.3.4
 
 ### Bug Fixes
