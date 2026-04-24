@@ -27,6 +27,7 @@ class _AppState extends State<App> {
   bool _showOuterRing = true;
   bool _showPanel = false;
   int _stackedPart = 0;
+  SwitchLayoutMode _switchLayoutMode = SwitchLayoutMode.circle;
   List<String> _eventLog = [];
 
   bool _imageOffsetEnabled = false;
@@ -291,6 +292,7 @@ class _AppState extends State<App> {
                   isConfig: _isConfig,
                   enableAnimations: _enableAnimations,
                   showOuterRing: _showOuterRing,
+                  switchLayoutMode: _switchLayoutMode,
                   onDeviceSelected: _handleDeviceSelected,
                   initialStackedSwitchPart: isStacked ? _stackedPart : null,
                   onStackedSwitchPartChanged: isStacked
@@ -339,6 +341,12 @@ class _AppState extends State<App> {
               isStacked: isStacked,
               stackedPart: _stackedPart,
               onStackedPartChanged: _handleStackedPartFromPanel,
+              switchLayoutMode: _switchLayoutMode,
+              onSwitchLayoutModeChanged: (mode) =>
+                  setState(() {
+                    _switchLayoutMode = mode;
+                    _topologyKey++;
+                  }),
               imageOffsetEnabled: _imageOffsetEnabled,
               onImageOffsetEnabledChanged: (v) => setState(() { _imageOffsetEnabled = v; _topologyKey++; }),
               imageOffsetX: _imageOffsetX,

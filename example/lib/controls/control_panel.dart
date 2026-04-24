@@ -27,6 +27,8 @@ class ControlPanel extends StatelessWidget {
     this.isStacked = false,
     this.stackedPart = 1,
     this.onStackedPartChanged,
+    this.switchLayoutMode = SwitchLayoutMode.circle,
+    this.onSwitchLayoutModeChanged,
     this.enableAnimations = true,
     this.onEnableAnimationsChanged,
     this.fullMismatch = false,
@@ -70,6 +72,8 @@ class ControlPanel extends StatelessWidget {
   final bool isStacked;
   final int stackedPart;
   final ValueChanged<int>? onStackedPartChanged;
+  final SwitchLayoutMode switchLayoutMode;
+  final ValueChanged<SwitchLayoutMode>? onSwitchLayoutModeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -186,6 +190,32 @@ class ControlPanel extends StatelessWidget {
                     onChanged: (v) => onDeviceCountChanged(v.round()),
                   ),
                   const SizedBox(height: 8),
+
+                  if (deviceType == DeviceType.switch_) ...[
+                    const SizedBox(height: 8),
+                    const Text('Layout mode',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    SegmentedButton<SwitchLayoutMode>(
+                      segments: const [
+                        ButtonSegment(
+                          value: SwitchLayoutMode.circle,
+                          label: Text('Circle'),
+                        ),
+                        ButtonSegment(
+                          value: SwitchLayoutMode.rectangle,
+                          label: Text('Rectangle'),
+                        ),
+                      ],
+                      selected: {switchLayoutMode},
+                      onSelectionChanged: (sel) {
+                        if (onSwitchLayoutModeChanged != null && sel.isNotEmpty) {
+                          onSwitchLayoutModeChanged!(sel.first);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   if (deviceType == DeviceType.switch_ && isStacked) ...[
                     const _SectionHeader(title: 'Stacked Part'),
