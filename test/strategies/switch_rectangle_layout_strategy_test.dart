@@ -290,5 +290,39 @@ void main() {
       expect(positions.exploreDevices, isEmpty);
       expect(positions.baselineDevices.length, 2);
     });
+
+    test('mismatch pair does not overlap at minimum viewport height', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final format = Switch28P();
+      // 1500x800 is the minimum content size the strategy inflates to.
+      final viewportSize = const Size(1500, 800);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+      final positions = strategy.calculateDevicePositions(
+        viewportSize,
+        center,
+        [
+          PortDevice(
+            portId: 'p1',
+            portNumber: 1,
+            deviceName: 'BaselineDev1',
+            deviceIp: '10.0.0.1',
+            exploreDevName: 'DiscoveredDev1',
+            exploreDevIp: '192.168.0.1',
+            connectionStatus: 0,
+          ),
+        ],
+        ports,
+      );
+
+      final actual = positions.exploreDevices.first;
+      final baseline = positions.baselineDevices.first;
+      // Baseline icon's bottom edge must stay above the actual icon's top edge
+      // (top section — actual sits below baseline, both above the chassis).
+      final baselineBottom = baseline.position.dy + baseline.size / 2;
+      final actualTop = actual.position.dy - actual.size / 2;
+      expect(baselineBottom, lessThan(actualTop),
+          reason: 'mismatch pair should not visually overlap even at min viewport');
+    });
   });
 }

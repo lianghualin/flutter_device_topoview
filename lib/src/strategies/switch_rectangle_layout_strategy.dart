@@ -149,6 +149,8 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
     if (isConfig) {
       filtered = filtered.where((d) => d.connectionStatus >= 0).toList();
     }
+    // Detect stacked on the ORIGINAL list — filtering first would hide the
+    // >28 signal when isConfig drops probed devices.
     if (_isStacked(devices)) {
       if (stackedSwitchSelectedPart == 1) {
         filtered = filtered
@@ -182,12 +184,12 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
     final bottomColumnXs = _columnXs(bottomRow);
     final Map<int, double> columnXByPort = {};
     for (int i = 0; i < topRow.length; i++) {
-      final num = topRow[i].portNumber;
-      if (num != null) columnXByPort[num] = topColumnXs[i];
+      final portNum = topRow[i].portNumber;
+      if (portNum != null) columnXByPort[portNum] = topColumnXs[i];
     }
     for (int i = 0; i < bottomRow.length; i++) {
-      final num = bottomRow[i].portNumber;
-      if (num != null) columnXByPort[num] = bottomColumnXs[i];
+      final portNum = bottomRow[i].portNumber;
+      if (portNum != null) columnXByPort[portNum] = bottomColumnXs[i];
     }
 
     // --- Section vertical extents --------------------------------------
@@ -237,13 +239,13 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
       final bool isTop = portNum.isOdd;
       final double columnX = columnXByPort[portNum] ?? center.position.dx;
 
-      final bool hasExplore = !isConfig &&
+      final bool hasExplore =
           ((dev.exploreDevName != null && dev.exploreDevName!.isNotEmpty) ||
                   (dev.exploreDevIp != null && dev.exploreDevIp!.isNotEmpty)) &&
               !(dev.deviceName == dev.exploreDevName &&
                   dev.deviceIp == dev.exploreDevIp);
-      final bool baselineIsReal = !isConfig &&
-          (dev.connectionStatus == 1 || dev.connectionStatus == -1);
+      final bool baselineIsReal =
+          dev.connectionStatus == 1 || dev.connectionStatus == -1;
 
       double actualDeviceSize = baseDeviceSize;
       if (dev.deviceType != 'Switch') actualDeviceSize *= 0.8;
@@ -251,17 +253,18 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
       if (dev.deviceType != 'Switch') baselineIconSize *= 0.8;
 
       // Slot Y positions — outer slot sits nearer the screen edge; actual
-      // slot sits nearer the chassis. 55/45 vertical split of the section.
+      // slot sits nearer the chassis. 25/75 vertical split keeps a safe gap
+      // between the two slots even at the minimum viewport height.
       double outerY;
       double actualY;
       if (isTop) {
         final double sectionH = topSectionBottom - topSectionTop;
-        outerY = topSectionTop + sectionH * 0.27;
-        actualY = topSectionTop + sectionH * 0.72;
+        outerY = topSectionTop + sectionH * 0.25;
+        actualY = topSectionTop + sectionH * 0.75;
       } else {
         final double sectionH = bottomSectionBottom - bottomSectionTop;
-        outerY = bottomSectionTop + sectionH * 0.73;
-        actualY = bottomSectionTop + sectionH * 0.28;
+        outerY = bottomSectionTop + sectionH * 0.75;
+        actualY = bottomSectionTop + sectionH * 0.25;
       }
       outerY = outerY.clamp(
         baselineIconSize / 2 + 10,
@@ -272,37 +275,27 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
         contentHeight - actualDeviceSize / 2 - 10 - labelBottomPadding,
       );
 
-      if (hasExplore) {
+      if (!isConfig && hasExplore) {
+        // mismatch: baseline on outer, explore on actual (same columnX)
         baselineOut.add(PositionedDevice(
           position: Offset(columnX, outerY),
           size: baselineIconSize,
           device: dev,
         ));
-        final PortDevice exploreDev = PortDevice(
-          portId: dev.portId,
-          portNumber: dev.portNumber,
-          deviceName: dev.deviceName,
-          deviceType: dev.deviceType,
-          deviceIp: dev.deviceIp,
-          exploreDevName: dev.exploreDevName,
-          exploreDevIp: dev.exploreDevIp,
-          connectionStatus: dev.connectionStatus,
-          deviceStatus: dev.deviceStatus,
-          exploreInboundUtilization: dev.exploreInboundUtilization,
-          exploreOutboundUtilization: dev.exploreOutboundUtilization,
-        );
         exploreOut.add(PositionedDevice(
           position: Offset(columnX, actualY),
           size: actualDeviceSize,
-          device: exploreDev,
+          device: dev,
         ));
-      } else if (baselineIsReal) {
+      } else if (!isConfig && baselineIsReal) {
+        // green (status 1) / red (status -1): single device on actual slot
         exploreOut.add(PositionedDevice(
           position: Offset(columnX, actualY),
           size: actualDeviceSize,
           device: dev,
         ));
       } else {
+        // black-only OR any device in config mode → outer slot
         baselineOut.add(PositionedDevice(
           position: Offset(columnX, outerY),
           size: baselineIconSize,
