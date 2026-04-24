@@ -298,31 +298,38 @@ void main() {
       final viewportSize = const Size(1500, 800);
       final center = strategy.calculateCenterLayout(viewportSize, format);
       final ports = strategy.calculatePortPositions(center, format, {});
+      // Four mismatch devices — density tier keeps icons small enough that
+      // the outer slot and the chassis-anchored actual slot don't collide
+      // in a 150-pixel-tall section.
       final positions = strategy.calculateDevicePositions(
         viewportSize,
         center,
         [
-          PortDevice(
-            portId: 'p1',
-            portNumber: 1,
-            deviceName: 'BaselineDev1',
-            deviceIp: '10.0.0.1',
-            exploreDevName: 'DiscoveredDev1',
-            exploreDevIp: '192.168.0.1',
-            connectionStatus: 0,
-          ),
+          for (int p in [1, 3, 5, 7])
+            PortDevice(
+              portId: 'p$p',
+              portNumber: p,
+              deviceName: 'BaselineDev$p',
+              deviceIp: '10.0.0.$p',
+              exploreDevName: 'DiscoveredDev$p',
+              exploreDevIp: '192.168.0.$p',
+              connectionStatus: 0,
+            ),
         ],
         ports,
       );
 
-      final actual = positions.exploreDevices.first;
-      final baseline = positions.baselineDevices.first;
-      // Baseline icon's bottom edge must stay above the actual icon's top edge
-      // (top section — actual sits below baseline, both above the chassis).
-      final baselineBottom = baseline.position.dy + baseline.size / 2;
-      final actualTop = actual.position.dy - actual.size / 2;
-      expect(baselineBottom, lessThan(actualTop),
-          reason: 'mismatch pair should not visually overlap even at min viewport');
+      // Verify non-overlap for each mismatch pair.
+      for (final baseline in positions.baselineDevices) {
+        final actual = positions.exploreDevices.firstWhere(
+          (d) => d.device.portNumber == baseline.device.portNumber,
+        );
+        final baselineBottom = baseline.position.dy + baseline.size / 2;
+        final actualTop = actual.position.dy - actual.size / 2;
+        expect(baselineBottom, lessThan(actualTop),
+            reason:
+                'mismatch pair on port ${baseline.device.portNumber} should not visually overlap');
+      }
     });
 
     test('connected devices are distributed across the full viewport width',
