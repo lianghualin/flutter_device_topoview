@@ -84,8 +84,17 @@ final strategy = (deviceType == DeviceType.switch_ &&
 ## Layout algorithm
 
 ### Inputs reused from today's strategy
-- `calculateCenterLayout(viewportSize, format)` — unchanged; returns the same `CenterDeviceLayout` as the circle strategy.
 - `calculatePortPositions(center, format, statusMap)` — unchanged; delegates to `SwitchDeviceView.getPortPositions()`.
+
+### `calculateCenterLayout` override (rectangle strategy only)
+
+Today's circle strategy offsets the chassis downward via `posY = (H - Cs + Cs*0.35)/2 + Cs*0.1 - 10`, which is asymmetric by design — the ring math wants more space above the chassis center. In rectangle mode the top and bottom sections are meant to be roughly equal, so `SwitchRectangleLayoutStrategy` overrides `calculateCenterLayout` to place the chassis centered:
+
+```dart
+final double posY = (contentHeight - centerSize) / 2;
+```
+
+`centerSize` and `posX` are computed the same way as the circle strategy. This override is **local to the rectangle strategy only** — `SwitchLayoutStrategy` is not touched.
 
 ### Viewport division
 
@@ -257,4 +266,3 @@ The default `SwitchLayoutMode.circle` means every existing caller keeps today's 
 
 1. **Stacked-chassis half-hide mechanism.** Need to inspect `flutter_switch_device` to decide whether to (a) wrap the chassis in an `Opacity(opacity: 0)` clip for the unselected half, (b) apply a `ClipRect`, or (c) substitute the stacked format with a non-stacked equivalent (`Switch24P` for part 1, or similar) while keeping port numbers intact. The planning phase will pick one based on what the package exposes.
 2. **Curve direction heuristic for mismatch lines at edge columns.** Simple rule: if column index is in the left half of the row, arc curves right; otherwise arc curves left. Refine during implementation if it visibly overlaps adjacent columns.
-3. **Chassis vertical asymmetry in rectangle mode.** Today's `calculateCenterLayout` uses `posY = (H - Cs + Cs*0.35)/2 + Cs*0.1 - 10`, which intentionally offsets the chassis downward — the circle layout benefits from more space above because the ring math is symmetric around the chassis center. In rectangle mode the top and bottom sections are meant to be roughly equal; the asymmetric posY leaves the bottom section noticeably smaller than the top. Options for planning: (a) accept the asymmetry — rectangle mode simply has a bigger top section; (b) override `calculateCenterLayout` in the rectangle strategy to use a centered `posY = (H - Cs)/2` while keeping the same `Cs`. Recommendation: (b), since it's internal to the new strategy and doesn't touch the circle path.
