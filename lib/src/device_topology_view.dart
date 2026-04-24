@@ -6,6 +6,7 @@ import 'package:flutter_switch_device/flutter_switch_device.dart' hide PortStatu
 import 'package:flutter_switch_device/flutter_switch_device.dart'
     as switch_pkg show PortStatus;
 import 'models/device_type.dart';
+import 'models/switch_layout_mode.dart';
 import 'models/port_device.dart';
 import 'models/device_format.dart';
 import 'models/port_status.dart';
@@ -20,6 +21,7 @@ import 'strategies/device_layout_strategy.dart';
 import 'strategies/host_layout_strategy.dart';
 import 'strategies/agent_layout_strategy.dart';
 import 'strategies/switch_layout_strategy.dart';
+import 'strategies/switch_rectangle_layout_strategy.dart';
 import 'mixins/pan_zoom_mixin.dart';
 
 class DeviceTopologyView extends StatefulWidget {
@@ -37,6 +39,7 @@ class DeviceTopologyView extends StatefulWidget {
     this.enableAnimations = true,
     this.showOuterRing = true,
     this.labelBottomPadding = 40.0,
+    this.switchLayoutMode = SwitchLayoutMode.circle,
     super.key,
   });
 
@@ -57,6 +60,10 @@ class DeviceTopologyView extends StatefulWidget {
   /// Extra bottom margin (in logical pixels) to prevent device labels from
   /// being clipped at the viewport edge. Increase for longer device names.
   final double labelBottomPadding;
+
+  /// Layout mode for switch topology views. Ignored for host/agent.
+  /// Defaults to [SwitchLayoutMode.circle] for backwards compatibility.
+  final SwitchLayoutMode switchLayoutMode;
 
   @override
   State<DeviceTopologyView> createState() => _DeviceTopologyViewState();
@@ -130,6 +137,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         widget.deviceType != oldWidget.deviceType ||
         widget.format != oldWidget.format ||
         widget.isConfig != oldWidget.isConfig ||
+        widget.switchLayoutMode != oldWidget.switchLayoutMode ||
         !identical(widget.portDevices, oldWidget.portDevices) ||
         !identical(widget.portStatusMap, oldWidget.portStatusMap)) {
       _createStrategy();
@@ -154,11 +162,19 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         );
         break;
       case DeviceType.switch_:
-        _strategy = SwitchLayoutStrategy(
-          isConfig: widget.isConfig,
-          stackedSwitchSelectedPart: _stackedSwitchSelectedPart,
-          labelBottomPadding: widget.labelBottomPadding,
-        );
+        if (widget.switchLayoutMode == SwitchLayoutMode.rectangle) {
+          _strategy = SwitchRectangleLayoutStrategy(
+            isConfig: widget.isConfig,
+            stackedSwitchSelectedPart: _stackedSwitchSelectedPart,
+            labelBottomPadding: widget.labelBottomPadding,
+          );
+        } else {
+          _strategy = SwitchLayoutStrategy(
+            isConfig: widget.isConfig,
+            stackedSwitchSelectedPart: _stackedSwitchSelectedPart,
+            labelBottomPadding: widget.labelBottomPadding,
+          );
+        }
         break;
     }
   }
