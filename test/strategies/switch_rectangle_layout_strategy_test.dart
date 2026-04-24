@@ -325,4 +325,37 @@ void main() {
           reason: 'mismatch pair should not visually overlap even at min viewport');
     });
   });
+
+  group('SwitchRectangleLayoutStrategy.buildFloatingDevices', () {
+    test('produces one DevFloat per positioned device; baseline first, explore second', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final format = Switch28P();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+      final positions = strategy.calculateDevicePositions(
+        viewportSize,
+        center,
+        [
+          PortDevice(
+            portId: 'p3',
+            portNumber: 3,
+            deviceName: 'BaseA',
+            deviceIp: '10.0.0.3',
+            exploreDevName: 'DiscoveredA',
+            exploreDevIp: '192.168.0.3',
+            connectionStatus: 0,
+          ),
+        ],
+        ports,
+      );
+
+      final floats = strategy.buildFloatingDevices(positions, const []);
+      // 1 baseline + 1 explore = 2 DevFloats.
+      expect(floats.length, 2);
+      // Both attach to port 3.
+      expect(floats[0].connectedPortNum, 3);
+      expect(floats[1].connectedPortNum, 3);
+    });
+  });
 }

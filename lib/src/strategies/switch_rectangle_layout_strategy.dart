@@ -8,7 +8,11 @@ import '../models/port.dart';
 import '../models/port_device.dart';
 import '../models/port_status.dart';
 import '../widgets/center_device_widget.dart';
+import '../widgets/floating_devices/agent_dev_float.dart';
 import '../widgets/floating_devices/dev_float.dart';
+import '../widgets/floating_devices/host_dev_float.dart';
+import '../widgets/floating_devices/switch_dev_float.dart';
+import '../widgets/floating_devices/unknown_dev_float.dart';
 import 'device_layout_strategy.dart';
 
 /// Layout strategy for switch topology views in rectangle mode.
@@ -322,7 +326,106 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
     DevicePositions positions,
     List<PortDevice> devices,
   ) {
-    throw UnimplementedError('Task 6: buildFloatingDevices');
+    final List<DevFloat> result = [];
+
+    // Outer-slot (baseline) devices first — preserves the same ordering
+    // the widget layer uses to slice the list into baseline/explore.
+    for (final pd in positions.baselineDevices) {
+      result.add(_buildDevFloat(pd, pd.device.deviceName, isReal: false));
+    }
+
+    // Actual-slot (real/explored) devices second.
+    for (final pd in positions.exploreDevices) {
+      final dev = pd.device;
+      String label;
+      if (dev.connectionStatus == 1 || dev.connectionStatus == -1) {
+        label = dev.deviceName;
+      } else {
+        label = (dev.exploreDevName != null && dev.exploreDevName!.isNotEmpty)
+            ? dev.exploreDevName!
+            : (dev.exploreDevIp ?? dev.deviceName);
+      }
+      result.add(_buildDevFloat(
+        pd,
+        label,
+        isReal: true,
+        inboundUtilization: dev.exploreInboundUtilization,
+        outboundUtilization: dev.exploreOutboundUtilization,
+      ));
+    }
+    return result;
+  }
+
+  DevFloat _buildDevFloat(
+    PositionedDevice pd,
+    String label, {
+    bool isReal = false,
+    double? inboundUtilization,
+    double? outboundUtilization,
+  }) {
+    final dev = pd.device;
+    final int portNum = dev.portNumber ?? 0;
+
+    switch (dev.deviceType) {
+      case 'Switch':
+        return SwitchDevFloat(
+          portstatus: dev.connectionStatus,
+          position: pd.position,
+          label: label,
+          size: pd.size,
+          connectedPortNum: portNum,
+          deviceStatus: isConfig ? true : dev.deviceStatus,
+          inboundUtilization: inboundUtilization,
+          outboundUtilization: outboundUtilization,
+          isRealDevice: isReal,
+        );
+      case 'MMI':
+      case 'Host':
+        return HostDevFloat(
+          portstatus: dev.connectionStatus,
+          position: pd.position,
+          label: label,
+          size: pd.size,
+          connectedPortNum: portNum,
+          deviceStatus: isConfig ? true : dev.deviceStatus,
+          inboundUtilization: inboundUtilization,
+          outboundUtilization: outboundUtilization,
+          isRealDevice: isReal,
+        );
+      case 'Agent':
+        return AgentDevFloat(
+          portstatus: dev.connectionStatus,
+          position: pd.position,
+          label: label,
+          size: pd.size,
+          connectedPortNum: portNum,
+          totalPfs: 0,
+          usedPfs: 0,
+          deviceStatus: isConfig ? true : dev.deviceStatus,
+          inboundUtilization: inboundUtilization,
+          outboundUtilization: outboundUtilization,
+          isRealDevice: isReal,
+        );
+      default:
+        String processed = label;
+        if (label.contains('+') && label.split('+').length >= 2) {
+          final parts = label.split('+');
+          if (parts[0].trim().isEmpty || parts[1].trim().isEmpty) {
+            processed = 'Unknown Device';
+          }
+        }
+        return UnknownDevFloat(
+          portstatus: dev.connectionStatus,
+          position: pd.position,
+          label: processed,
+          size: pd.size,
+          connectedPortNum: portNum,
+          deviceStatus: isConfig ? true : dev.deviceStatus,
+          inboundUtilization: inboundUtilization,
+          outboundUtilization: outboundUtilization,
+          isRealDevice: isReal,
+        );
+    }
   }
 
   @override
