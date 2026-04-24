@@ -139,7 +139,189 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
     List<Port> ports, {
     Size? actualViewport,
   }) {
-    throw UnimplementedError('Task 5: calculateDevicePositions');
+    final double contentWidth =
+        viewportSize.width < _minWidth ? _minWidth : viewportSize.width;
+    final double contentHeight =
+        viewportSize.height < _minHeight ? _minHeight : viewportSize.height;
+
+    // --- Filter devices (config + stacked) -----------------------------
+    List<PortDevice> filtered = List.of(devices);
+    if (isConfig) {
+      filtered = filtered.where((d) => d.connectionStatus >= 0).toList();
+    }
+    if (_isStacked(devices)) {
+      if (stackedSwitchSelectedPart == 1) {
+        filtered = filtered
+            .where((d) =>
+                d.portNumber != null &&
+                d.portNumber! >= 1 &&
+                d.portNumber! <= 24)
+            .toList();
+      } else if (stackedSwitchSelectedPart == 2) {
+        filtered = filtered
+            .where((d) =>
+                d.portNumber != null &&
+                d.portNumber! >= 25 &&
+                d.portNumber! <= 48)
+            .toList();
+      } else {
+        filtered = [];
+      }
+    }
+    if (filtered.isEmpty) {
+      return const DevicePositions(
+        baselineDevices: [],
+        exploreDevices: [],
+      );
+    }
+
+    // --- Precompute column X lookups per row ---------------------------
+    final topRow = _topRowPorts(ports);
+    final bottomRow = _bottomRowPorts(ports);
+    final topColumnXs = _columnXs(topRow);
+    final bottomColumnXs = _columnXs(bottomRow);
+    final Map<int, double> columnXByPort = {};
+    for (int i = 0; i < topRow.length; i++) {
+      final num = topRow[i].portNumber;
+      if (num != null) columnXByPort[num] = topColumnXs[i];
+    }
+    for (int i = 0; i < bottomRow.length; i++) {
+      final num = bottomRow[i].portNumber;
+      if (num != null) columnXByPort[num] = bottomColumnXs[i];
+    }
+
+    // --- Section vertical extents --------------------------------------
+    final double topSectionTop = 0.0;
+    final double topSectionBottom = center.position.dy;
+    final double bottomSectionTop = center.position.dy + center.size;
+    final double bottomSectionBottom = contentHeight;
+
+    // --- Device size tiers ---------------------------------------------
+    final double visibleWidth = actualViewport?.width ?? contentWidth;
+    final double visibleHeight = actualViewport?.height ?? contentHeight;
+    final int deviceCount = filtered.length;
+    final double canvasMinDim = math.min(contentWidth, contentHeight);
+
+    double sizeFactor;
+    double minSize;
+    double maxSize;
+    if (deviceCount <= 3) {
+      sizeFactor = 0.10;
+      minSize = 55;
+      maxSize = 100;
+    } else if (deviceCount <= 6) {
+      sizeFactor = 0.08;
+      minSize = 45;
+      maxSize = 85;
+    } else {
+      sizeFactor = 0.065;
+      minSize = 40;
+      maxSize = 75;
+    }
+    double baseDeviceSize =
+        (canvasMinDim * sizeFactor).clamp(minSize, maxSize);
+    final double viewportMinDim = math.min(visibleWidth, visibleHeight);
+    if (viewportMinDim < canvasMinDim) {
+      final double boost =
+          math.sqrt(canvasMinDim / viewportMinDim).clamp(1.0, 1.4);
+      baseDeviceSize = (baseDeviceSize * boost).clamp(minSize, maxSize * 1.3);
+    }
+    final double baselineDeviceSize = baseDeviceSize * 0.7;
+
+    // --- Per-device placement ------------------------------------------
+    final List<PositionedDevice> baselineOut = [];
+    final List<PositionedDevice> exploreOut = [];
+
+    for (final dev in filtered) {
+      final int portNum = dev.portNumber ?? 0;
+      final bool isTop = portNum.isOdd;
+      final double columnX = columnXByPort[portNum] ?? center.position.dx;
+
+      final bool hasExplore = !isConfig &&
+          ((dev.exploreDevName != null && dev.exploreDevName!.isNotEmpty) ||
+                  (dev.exploreDevIp != null && dev.exploreDevIp!.isNotEmpty)) &&
+              !(dev.deviceName == dev.exploreDevName &&
+                  dev.deviceIp == dev.exploreDevIp);
+      final bool baselineIsReal = !isConfig &&
+          (dev.connectionStatus == 1 || dev.connectionStatus == -1);
+
+      double actualDeviceSize = baseDeviceSize;
+      if (dev.deviceType != 'Switch') actualDeviceSize *= 0.8;
+      double baselineIconSize = baselineDeviceSize;
+      if (dev.deviceType != 'Switch') baselineIconSize *= 0.8;
+
+      // Slot Y positions — outer slot sits nearer the screen edge; actual
+      // slot sits nearer the chassis. 55/45 vertical split of the section.
+      double outerY;
+      double actualY;
+      if (isTop) {
+        final double sectionH = topSectionBottom - topSectionTop;
+        outerY = topSectionTop + sectionH * 0.27;
+        actualY = topSectionTop + sectionH * 0.72;
+      } else {
+        final double sectionH = bottomSectionBottom - bottomSectionTop;
+        outerY = bottomSectionTop + sectionH * 0.73;
+        actualY = bottomSectionTop + sectionH * 0.28;
+      }
+      outerY = outerY.clamp(
+        baselineIconSize / 2 + 10,
+        contentHeight - baselineIconSize / 2 - 10 - labelBottomPadding,
+      );
+      actualY = actualY.clamp(
+        actualDeviceSize / 2 + 10,
+        contentHeight - actualDeviceSize / 2 - 10 - labelBottomPadding,
+      );
+
+      if (hasExplore) {
+        baselineOut.add(PositionedDevice(
+          position: Offset(columnX, outerY),
+          size: baselineIconSize,
+          device: dev,
+        ));
+        final PortDevice exploreDev = PortDevice(
+          portId: dev.portId,
+          portNumber: dev.portNumber,
+          deviceName: dev.deviceName,
+          deviceType: dev.deviceType,
+          deviceIp: dev.deviceIp,
+          exploreDevName: dev.exploreDevName,
+          exploreDevIp: dev.exploreDevIp,
+          connectionStatus: dev.connectionStatus,
+          deviceStatus: dev.deviceStatus,
+          exploreInboundUtilization: dev.exploreInboundUtilization,
+          exploreOutboundUtilization: dev.exploreOutboundUtilization,
+        );
+        exploreOut.add(PositionedDevice(
+          position: Offset(columnX, actualY),
+          size: actualDeviceSize,
+          device: exploreDev,
+        ));
+      } else if (baselineIsReal) {
+        exploreOut.add(PositionedDevice(
+          position: Offset(columnX, actualY),
+          size: actualDeviceSize,
+          device: dev,
+        ));
+      } else {
+        baselineOut.add(PositionedDevice(
+          position: Offset(columnX, outerY),
+          size: baselineIconSize,
+          device: dev,
+        ));
+      }
+    }
+
+    return DevicePositions(
+      baselineDevices: baselineOut,
+      exploreDevices: exploreOut,
+    );
+  }
+
+  /// Stacked if any device port number exceeds 28. Matches the heuristic
+  /// used by the circle strategy.
+  bool _isStacked(List<PortDevice> devices) {
+    return devices.any(
+        (d) => d.portNumber != null && d.portNumber! > 28);
   }
 
   @override

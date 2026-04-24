@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_switch_device/flutter_switch_device.dart';
+import 'package:device_topology_view/device_topology_view.dart';
+import 'package:device_topology_view/src/models/port.dart';
 import 'package:device_topology_view/src/strategies/switch_rectangle_layout_strategy.dart';
+import 'package:device_topology_view/src/widgets/center_device_widget.dart';
 
 void main() {
   group('SwitchRectangleLayoutStrategy.calculateCenterLayout', () {
@@ -122,6 +124,171 @@ void main() {
       final lastPortX = topRow.last.position.dx + topRow.last.width / 2;
       expect(columnXs.first, closeTo(firstPortX, 0.01));
       expect(columnXs.last, closeTo(lastPortX, 0.01));
+    });
+  });
+
+  group('SwitchRectangleLayoutStrategy.calculateDevicePositions', () {
+    // ---- setup helpers --------------------------------------------------
+    ({CenterDeviceLayout center, List<Port> ports})
+        buildLayout(SwitchRectangleLayoutStrategy strategy) {
+      final format = Switch28P();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+      return (center: center, ports: ports);
+    }
+
+    PortDevice green(int port) => PortDevice(
+          portId: 'p$port',
+          portNumber: port,
+          deviceName: 'Dev$port',
+          deviceType: 'Switch',
+          deviceIp: '10.0.0.$port',
+          exploreDevName: 'Dev$port', // matches baseline → matched
+          exploreDevIp: '10.0.0.$port',
+          connectionStatus: 1,
+        );
+    PortDevice blackOnly(int port) => PortDevice(
+          portId: 'p$port',
+          portNumber: port,
+          deviceName: 'Dev$port',
+          deviceType: 'Switch',
+          connectionStatus: 0, // no explore
+        );
+    PortDevice redOnly(int port) => PortDevice(
+          portId: 'p$port',
+          portNumber: port,
+          deviceName: 'Dev$port',
+          deviceType: 'Switch',
+          connectionStatus: -1, // probed / explore-only
+        );
+    PortDevice mismatch(int port) => PortDevice(
+          portId: 'p$port',
+          portNumber: port,
+          deviceName: 'BaselineDev$port',
+          deviceType: 'Switch',
+          deviceIp: '10.0.0.$port',
+          exploreDevName: 'DiscoveredDev$port',
+          exploreDevIp: '192.168.0.$port',
+          connectionStatus: 0,
+        );
+
+    test('green-only: actual slot filled, baseline slot empty', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final layout = buildLayout(strategy);
+      final positions = strategy.calculateDevicePositions(
+        const Size(1500, 1000),
+        layout.center,
+        [green(1)],
+        layout.ports,
+      );
+
+      expect(positions.baselineDevices, isEmpty);
+      expect(positions.exploreDevices.length, 1);
+      expect(positions.exploreDevices.first.device.portNumber, 1);
+    });
+
+    test('black-only: baseline slot filled, actual slot empty', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final layout = buildLayout(strategy);
+      final positions = strategy.calculateDevicePositions(
+        const Size(1500, 1000),
+        layout.center,
+        [blackOnly(3)],
+        layout.ports,
+      );
+
+      expect(positions.baselineDevices.length, 1);
+      expect(positions.exploreDevices, isEmpty);
+      expect(positions.baselineDevices.first.device.portNumber, 3);
+    });
+
+    test('red-only: actual slot filled with the probed device', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final layout = buildLayout(strategy);
+      final positions = strategy.calculateDevicePositions(
+        const Size(1500, 1000),
+        layout.center,
+        [redOnly(5)],
+        layout.ports,
+      );
+
+      expect(positions.baselineDevices, isEmpty);
+      expect(positions.exploreDevices.length, 1);
+      expect(positions.exploreDevices.first.device.portNumber, 5);
+    });
+
+    test('mismatch: both slots filled for the same port', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final layout = buildLayout(strategy);
+      final positions = strategy.calculateDevicePositions(
+        const Size(1500, 1000),
+        layout.center,
+        [mismatch(7)],
+        layout.ports,
+      );
+
+      expect(positions.baselineDevices.length, 1);
+      expect(positions.exploreDevices.length, 1);
+      expect(positions.baselineDevices.first.device.portNumber, 7);
+      expect(positions.exploreDevices.first.device.portNumber, 7);
+    });
+
+    test('odd ports land in the top section, even in the bottom', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final layout = buildLayout(strategy);
+      final positions = strategy.calculateDevicePositions(
+        const Size(1500, 1000),
+        layout.center,
+        [green(1), green(2)],
+        layout.ports,
+      );
+
+      final centerTop = layout.center.position.dy;
+      final centerBottom = centerTop + layout.center.size;
+      final p1 = positions.exploreDevices.firstWhere(
+        (d) => d.device.portNumber == 1,
+      );
+      final p2 = positions.exploreDevices.firstWhere(
+        (d) => d.device.portNumber == 2,
+      );
+      expect(p1.position.dy, lessThan(centerTop),
+          reason: 'odd port device goes above chassis');
+      expect(p2.position.dy, greaterThan(centerBottom),
+          reason: 'even port device goes below chassis');
+    });
+
+    test('actual slot is closer to chassis than outer (baseline) slot', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final layout = buildLayout(strategy);
+      final positions = strategy.calculateDevicePositions(
+        const Size(1500, 1000),
+        layout.center,
+        [mismatch(1)], // both tiers on port 1 (top section)
+        layout.ports,
+      );
+
+      final actual = positions.exploreDevices.first;
+      final baseline = positions.baselineDevices.first;
+      final centerTop = layout.center.position.dy;
+      // Both above the chassis; the actual icon is nearer the chassis top.
+      expect(actual.position.dy, lessThan(centerTop));
+      expect(baseline.position.dy, lessThan(actual.position.dy));
+    });
+
+    test('isConfig strips explore devices; baseline fills outer slot only', () {
+      final strategy = SwitchRectangleLayoutStrategy(isConfig: true);
+      final layout = buildLayout(strategy);
+      final positions = strategy.calculateDevicePositions(
+        const Size(1500, 1000),
+        layout.center,
+        [green(1), mismatch(3)],
+        layout.ports,
+      );
+
+      // All devices appear on the baseline (outer) slot, none on actual.
+      expect(positions.exploreDevices, isEmpty);
+      expect(positions.baselineDevices.length, 2);
     });
   });
 }
