@@ -20,7 +20,7 @@ import 'device_layout_strategy.dart';
 /// Places floating devices in column sections above and below the chassis
 /// instead of in two concentric rings. The chassis itself is rendered
 /// vertically centered in the viewport. See the design spec at
-/// `docs/superpowers/specs/2026-04-24-rectangle-switch-layout-design.md`.
+/// `doc/docs/superpowers/specs/2026-04-24-rectangle-switch-layout-design.md`.
 class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
   final bool isConfig;
   final int stackedSwitchSelectedPart;

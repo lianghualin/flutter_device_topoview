@@ -22,7 +22,7 @@ A Flutter widget for visualizing device-centric network topologies with interact
 
 ```yaml
 dependencies:
-  device_topology_view: ^1.5.0
+  device_topology_view: ^1.4.0
 ```
 
 ## Quick Start

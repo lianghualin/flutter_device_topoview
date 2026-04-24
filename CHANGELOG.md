@@ -1,4 +1,4 @@
-## 1.5.0
+## 1.4.0
 
 ### New Features
 - **Rectangle switch layout (`SwitchLayoutMode.rectangle`)**: New opt-in layout for `DeviceType.switch_` that arranges floating devices in column sections above and below the chassis instead of two concentric rings. Only ports with a connected device get a column; those columns are distributed evenly across the full viewport width with a small edge margin, and connection lines slant from each port on the chassis to its device column. Pass `switchLayoutMode: SwitchLayoutMode.rectangle` on `DeviceTopologyView` to enable. The default `SwitchLayoutMode.circle` preserves the original behavior — existing callers are unaffected.
