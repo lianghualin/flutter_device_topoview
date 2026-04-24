@@ -75,7 +75,60 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
     Object format,
     Map<String, PortStatus> statusMap,
   ) {
-    throw UnimplementedError('Task 3: calculatePortPositions');
+    if (format is! SwitchFormat) {
+      return [];
+    }
+
+    final SwitchFormat switchFormat = format;
+    final int? validPortsNum = switchFormat.validPortsNum;
+
+    final Map<int, Offset> portCenters = SwitchDeviceView.getPortPositions(
+      switchFormat,
+      _cachedViewportSize,
+    );
+
+    final double cs = _packageCenterSize(switchFormat, _cachedViewportSize);
+    final double portWidth = _packagePortWidth(switchFormat, cs);
+    final double portHeight = portWidth * 0.75;
+
+    final List<Port> ports = [];
+
+    for (final entry in portCenters.entries) {
+      final int i = entry.key;
+      final Offset portCenter = entry.value;
+      final bool isInvalid = validPortsNum != null && i > validPortsNum;
+
+      final PortStatus? portStatus = statusMap[i.toString()];
+      final bool? isUp =
+          portStatus != null ? _portStatusToBool(portStatus) : null;
+
+      double opacity = 1.0;
+      if (switchFormat.isStacked) {
+        if (stackedSwitchSelectedPart == 1) {
+          opacity = (i >= 1 && i <= 24) ? 1.0 : 0.3;
+        } else if (stackedSwitchSelectedPart == 2) {
+          opacity = (i >= 25 && i <= 48) ? 1.0 : 0.3;
+        } else {
+          opacity = 0.3;
+        }
+      }
+
+      ports.add(Port(
+        position: Offset(
+          portCenter.dx - portWidth / 2,
+          portCenter.dy - portHeight / 2,
+        ),
+        portNumber: i,
+        width: portWidth,
+        height: portHeight,
+        isUp: isUp,
+        isInvalid: isInvalid,
+        opacity: opacity,
+      ));
+    }
+
+    ports.sort((a, b) => (a.portNumber ?? 0).compareTo(b.portNumber ?? 0));
+    return ports;
   }
 
   @override
@@ -113,5 +166,39 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
     List<PortDevice> portDevices,
   ) {
     throw UnimplementedError('Task 7: generateExploreConnections');
+  }
+
+  static double _packageCenterSize(SwitchFormat format, Size viewportSize) {
+    final scaleX = viewportSize.width / format.minWidth;
+    final scaleY = viewportSize.height / format.minHeight;
+    return 500.0 * math.min(scaleX, scaleY);
+  }
+
+  static double _packagePortWidth(SwitchFormat format, double cs) {
+    final allX = <double>[
+      for (final o in format.oddPortOffsetR) o.dx,
+      for (final o in format.evenPortOffsetR) o.dx,
+    ]..sort();
+    if (allX.length < 2) return cs * 0.04;
+    double minSpacing = double.infinity;
+    for (int i = 1; i < allX.length; i++) {
+      final spacing = allX[i] - allX[i - 1];
+      if (spacing > 0 && spacing < minSpacing) {
+        minSpacing = spacing;
+      }
+    }
+    final rawWidth = cs * minSpacing * 0.8;
+    return rawWidth.clamp(10.0, 25.0);
+  }
+
+  static bool? _portStatusToBool(PortStatus status) {
+    switch (status) {
+      case PortStatus.up:
+        return true;
+      case PortStatus.down:
+        return false;
+      case PortStatus.unknown:
+        return null;
+    }
   }
 }

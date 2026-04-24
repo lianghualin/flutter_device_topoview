@@ -39,4 +39,48 @@ void main() {
       expect(layout.position.dy, closeTo(expectedPosY, 0.01));
     });
   });
+
+  group('SwitchRectangleLayoutStrategy.calculatePortPositions', () {
+    test('returns one Port per port in the format with package-derived X/Y', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final format = Switch28P();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+
+      final ports = strategy.calculatePortPositions(center, format, {});
+
+      expect(ports.length, 28);
+      // Sorted by portNumber ascending, 1..28.
+      for (int i = 0; i < ports.length; i++) {
+        expect(ports[i].portNumber, i + 1);
+      }
+      // Each port has non-zero width and height.
+      expect(ports.every((p) => p.width > 0 && p.height > 0), isTrue);
+    });
+
+    test('dims stacked-part ports outside the selected part', () {
+      final strategy = SwitchRectangleLayoutStrategy(
+        stackedSwitchSelectedPart: 1,
+      );
+      final format = Switch48PStacked();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+
+      final ports = strategy.calculatePortPositions(center, format, {});
+
+      // Part 1 ports (1..24) are fully opaque; part 2 ports (25..48) are dimmed.
+      expect(
+        ports.where((p) => p.portNumber != null && p.portNumber! <= 24).every(
+              (p) => p.opacity == 1.0,
+            ),
+        isTrue,
+      );
+      expect(
+        ports.where((p) => p.portNumber != null && p.portNumber! > 24).every(
+              (p) => p.opacity == 0.3,
+            ),
+        isTrue,
+      );
+    });
+  });
 }
