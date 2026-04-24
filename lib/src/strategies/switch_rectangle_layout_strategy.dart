@@ -521,6 +521,12 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
   /// Set of port numbers for which the original input devices list has an
   /// actual (explore) device — either matched (status 1), probed
   /// (status -1), or mismatch (status 0 with explore data).
+  ///
+  /// The `hasExplore || baselineIsReal` condition MUST stay in sync with
+  /// the slot-routing decision in [calculateDevicePositions]: any port
+  /// whose device lands in the actual slot there must appear in this set,
+  /// otherwise the mismatch-curve flag on the baseline line will silently
+  /// drift out of sync and render straight lines through the actual icon.
   Set<int> _portNumbersWithActual(List<PortDevice> portDevices) {
     final Set<int> result = {};
     for (final d in portDevices) {
