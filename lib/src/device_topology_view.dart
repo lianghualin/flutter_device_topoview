@@ -605,6 +605,31 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   // Switch port status conversion
   // ---------------------------------------------------------------------------
 
+  /// When in rectangle mode on a stacked format, returns the rect covering
+  /// the unused half of the chassis so rectangle columns don't visually
+  /// compete with it. Returns null when no cover is needed.
+  Rect? _stackedCoverRect() {
+    if (widget.switchLayoutMode != SwitchLayoutMode.rectangle) return null;
+    if (widget.format is! SwitchFormat) return null;
+    final sf = widget.format as SwitchFormat;
+    if (!sf.isStacked) return null;
+    if (_stackedSwitchSelectedPart != 1 && _stackedSwitchSelectedPart != 2) {
+      return null;
+    }
+
+    final double left = _centerLayout.position.dx;
+    final double width = _centerLayout.size;
+    final double halfH = _centerLayout.size / 2;
+    // Part 1 is the top half of the stacked chassis → cover the bottom.
+    // Part 2 is the bottom half → cover the top.
+    if (_stackedSwitchSelectedPart == 1) {
+      return Rect.fromLTWH(
+          left, _centerLayout.position.dy + halfH, width, halfH);
+    } else {
+      return Rect.fromLTWH(left, _centerLayout.position.dy, width, halfH);
+    }
+  }
+
   /// Converts the local [PortStatus] map (String keys) to the package's
   /// [switch_pkg.PortStatus] map (int keys) for [SwitchDeviceView].
   Map<int, switch_pkg.PortStatus> _buildSwitchPortStatuses() {
@@ -656,7 +681,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                 children: [
                   // Layer 1: Center device (switch renders body+ports here; host/agent render body only here)
                   if (widget.deviceType == DeviceType.switch_ &&
-                      widget.format is SwitchFormat)
+                      widget.format is SwitchFormat) ...[
                     SwitchDeviceView(
                       size: Size(_contentWidth, _contentHeight),
                       format: widget.format as SwitchFormat,
@@ -668,8 +693,15 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       stackedPart: _stackedSwitchSelectedPart,
                       onStackedPartChanged: _handleStackedPartChanged,
                       selectedPorts: _selectedPorts,
-                    )
-                  else if (widget.deviceType != DeviceType.host)
+                    ),
+                    if (_stackedCoverRect() != null)
+                      Positioned.fromRect(
+                        rect: _stackedCoverRect()!,
+                        child: const IgnorePointer(
+                          child: ColoredBox(color: Colors.white),
+                        ),
+                      ),
+                  ] else if (widget.deviceType != DeviceType.host)
                     CenterDeviceLayer(
                       layout: _centerLayout,
                       format: widget.format,
