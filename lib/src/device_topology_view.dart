@@ -6,6 +6,7 @@ import 'package:flutter_switch_device/flutter_switch_device.dart' hide PortStatu
 import 'package:flutter_switch_device/flutter_switch_device.dart'
     as switch_pkg show PortStatus;
 import 'models/device_type.dart';
+import 'models/switch_layout_mode.dart';
 import 'models/port_device.dart';
 import 'models/device_format.dart';
 import 'models/port_status.dart';
@@ -20,6 +21,7 @@ import 'strategies/device_layout_strategy.dart';
 import 'strategies/host_layout_strategy.dart';
 import 'strategies/agent_layout_strategy.dart';
 import 'strategies/switch_layout_strategy.dart';
+import 'strategies/switch_rectangle_layout_strategy.dart';
 import 'mixins/pan_zoom_mixin.dart';
 
 class DeviceTopologyView extends StatefulWidget {
@@ -37,6 +39,7 @@ class DeviceTopologyView extends StatefulWidget {
     this.enableAnimations = true,
     this.showOuterRing = true,
     this.labelBottomPadding = 40.0,
+    this.switchLayoutMode = SwitchLayoutMode.circle,
     super.key,
   });
 
@@ -57,6 +60,10 @@ class DeviceTopologyView extends StatefulWidget {
   /// Extra bottom margin (in logical pixels) to prevent device labels from
   /// being clipped at the viewport edge. Increase for longer device names.
   final double labelBottomPadding;
+
+  /// Layout mode for switch topology views. Ignored for host/agent.
+  /// Defaults to [SwitchLayoutMode.circle] for backwards compatibility.
+  final SwitchLayoutMode switchLayoutMode;
 
   @override
   State<DeviceTopologyView> createState() => _DeviceTopologyViewState();
@@ -130,6 +137,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         widget.deviceType != oldWidget.deviceType ||
         widget.format != oldWidget.format ||
         widget.isConfig != oldWidget.isConfig ||
+        widget.switchLayoutMode != oldWidget.switchLayoutMode ||
         !identical(widget.portDevices, oldWidget.portDevices) ||
         !identical(widget.portStatusMap, oldWidget.portStatusMap)) {
       _createStrategy();
@@ -154,11 +162,19 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         );
         break;
       case DeviceType.switch_:
-        _strategy = SwitchLayoutStrategy(
-          isConfig: widget.isConfig,
-          stackedSwitchSelectedPart: _stackedSwitchSelectedPart,
-          labelBottomPadding: widget.labelBottomPadding,
-        );
+        if (widget.switchLayoutMode == SwitchLayoutMode.rectangle) {
+          _strategy = SwitchRectangleLayoutStrategy(
+            isConfig: widget.isConfig,
+            stackedSwitchSelectedPart: _stackedSwitchSelectedPart,
+            labelBottomPadding: widget.labelBottomPadding,
+          );
+        } else {
+          _strategy = SwitchLayoutStrategy(
+            isConfig: widget.isConfig,
+            stackedSwitchSelectedPart: _stackedSwitchSelectedPart,
+            labelBottomPadding: widget.labelBottomPadding,
+          );
+        }
         break;
     }
   }
@@ -589,6 +605,31 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
   // Switch port status conversion
   // ---------------------------------------------------------------------------
 
+  /// When in rectangle mode on a stacked format, returns the rect covering
+  /// the unused half of the chassis so rectangle columns don't visually
+  /// compete with it. Returns null when no cover is needed.
+  Rect? _stackedCoverRect() {
+    if (widget.switchLayoutMode != SwitchLayoutMode.rectangle) return null;
+    if (widget.format is! SwitchFormat) return null;
+    final sf = widget.format as SwitchFormat;
+    if (!sf.isStacked) return null;
+    if (_stackedSwitchSelectedPart != 1 && _stackedSwitchSelectedPart != 2) {
+      return null;
+    }
+
+    final double left = _centerLayout.position.dx;
+    final double width = _centerLayout.size;
+    final double halfH = _centerLayout.size / 2;
+    // Part 1 is the top half of the stacked chassis → cover the bottom.
+    // Part 2 is the bottom half → cover the top.
+    if (_stackedSwitchSelectedPart == 1) {
+      return Rect.fromLTWH(
+          left, _centerLayout.position.dy + halfH, width, halfH);
+    } else {
+      return Rect.fromLTWH(left, _centerLayout.position.dy, width, halfH);
+    }
+  }
+
   /// Converts the local [PortStatus] map (String keys) to the package's
   /// [switch_pkg.PortStatus] map (int keys) for [SwitchDeviceView].
   Map<int, switch_pkg.PortStatus> _buildSwitchPortStatuses() {
@@ -640,7 +681,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                 children: [
                   // Layer 1: Center device (switch renders body+ports here; host/agent render body only here)
                   if (widget.deviceType == DeviceType.switch_ &&
-                      widget.format is SwitchFormat)
+                      widget.format is SwitchFormat) ...[
                     SwitchDeviceView(
                       size: Size(_contentWidth, _contentHeight),
                       format: widget.format as SwitchFormat,
@@ -652,8 +693,15 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                       stackedPart: _stackedSwitchSelectedPart,
                       onStackedPartChanged: _handleStackedPartChanged,
                       selectedPorts: _selectedPorts,
-                    )
-                  else if (widget.deviceType != DeviceType.host)
+                    ),
+                    if (_stackedCoverRect() != null)
+                      Positioned.fromRect(
+                        rect: _stackedCoverRect()!,
+                        child: const IgnorePointer(
+                          child: ColoredBox(color: Colors.white),
+                        ),
+                      ),
+                  ] else if (widget.deviceType != DeviceType.host)
                     CenterDeviceLayer(
                       layout: _centerLayout,
                       format: widget.format,
