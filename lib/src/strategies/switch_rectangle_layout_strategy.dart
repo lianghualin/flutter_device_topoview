@@ -181,21 +181,6 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
       );
     }
 
-    // --- Precompute column X lookups per row ---------------------------
-    final topRow = _topRowPorts(ports);
-    final bottomRow = _bottomRowPorts(ports);
-    final topColumnXs = _columnXs(topRow);
-    final bottomColumnXs = _columnXs(bottomRow);
-    final Map<int, double> columnXByPort = {};
-    for (int i = 0; i < topRow.length; i++) {
-      final portNum = topRow[i].portNumber;
-      if (portNum != null) columnXByPort[portNum] = topColumnXs[i];
-    }
-    for (int i = 0; i < bottomRow.length; i++) {
-      final portNum = bottomRow[i].portNumber;
-      if (portNum != null) columnXByPort[portNum] = bottomColumnXs[i];
-    }
-
     // --- Section vertical extents --------------------------------------
     final double topSectionTop = 0.0;
     final double topSectionBottom = center.position.dy;
@@ -233,6 +218,43 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
       baseDeviceSize = (baseDeviceSize * boost).clamp(minSize, maxSize * 1.3);
     }
     final double baselineDeviceSize = baseDeviceSize * 0.7;
+
+    // --- Precompute column X lookups per row ---------------------------
+    // Only ports that actually have a connected device participate in the
+    // column grid. Columns are evenly distributed across the full content
+    // width with a small edge margin, so the widest-possible spread is
+    // used regardless of where the ports sit on the chassis.
+    final Set<int> connectedPortNums = {
+      for (final d in filtered)
+        if (d.portNumber != null) d.portNumber!,
+    };
+    final double iconHalfMargin = baseDeviceSize / 2 + 10;
+    final double leftBound = iconHalfMargin;
+    final double rightBound = contentWidth - iconHalfMargin;
+
+    List<Port> sortedConnectedRow(List<Port> row) => row
+        .where((p) =>
+            p.portNumber != null && connectedPortNums.contains(p.portNumber))
+        .toList()
+      ..sort((a, b) => (a.position.dx + a.width / 2)
+          .compareTo(b.position.dx + b.width / 2));
+
+    final connectedTop = sortedConnectedRow(_topRowPorts(ports));
+    final connectedBottom = sortedConnectedRow(_bottomRowPorts(ports));
+    final topColumnXs =
+        _distributeColumns(connectedTop.length, leftBound, rightBound);
+    final bottomColumnXs =
+        _distributeColumns(connectedBottom.length, leftBound, rightBound);
+
+    final Map<int, double> columnXByPort = {};
+    for (int i = 0; i < connectedTop.length; i++) {
+      final portNum = connectedTop[i].portNumber;
+      if (portNum != null) columnXByPort[portNum] = topColumnXs[i];
+    }
+    for (int i = 0; i < connectedBottom.length; i++) {
+      final portNum = connectedBottom[i].portNumber;
+      if (portNum != null) columnXByPort[portNum] = bottomColumnXs[i];
+    }
 
     // --- Per-device placement ------------------------------------------
     final List<PositionedDevice> baselineOut = [];
@@ -634,6 +656,18 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
       rowPorts.length,
       (i) => first + step * i,
     );
+  }
+
+  /// Evenly distributes [count] column center-X positions between
+  /// [leftBound] and [rightBound]. For [count] == 0 returns an empty list;
+  /// for [count] == 1 returns the midpoint; for [count] >= 2 distributes
+  /// with step = (rightBound - leftBound) / (count - 1).
+  List<double> _distributeColumns(
+      int count, double leftBound, double rightBound) {
+    if (count <= 0) return const [];
+    if (count == 1) return [(leftBound + rightBound) / 2];
+    final double step = (rightBound - leftBound) / (count - 1);
+    return List<double>.generate(count, (i) => leftBound + step * i);
   }
 
   // --- @visibleForTesting shims --------------------------------------------

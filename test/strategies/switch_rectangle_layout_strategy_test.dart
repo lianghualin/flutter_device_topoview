@@ -324,6 +324,91 @@ void main() {
       expect(baselineBottom, lessThan(actualTop),
           reason: 'mismatch pair should not visually overlap even at min viewport');
     });
+
+    test('connected devices are distributed across the full viewport width',
+        () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final format = Switch28P();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+
+      // Three odd-port connected devices. The chassis only occupies the
+      // middle of the viewport, but the three device columns should span
+      // most of 1500 — not cluster near the chassis.
+      final positions = strategy.calculateDevicePositions(
+        viewportSize,
+        center,
+        [
+          PortDevice(
+              portId: 'p1', portNumber: 1, deviceName: 'A', connectionStatus: 1),
+          PortDevice(
+              portId: 'p13',
+              portNumber: 13,
+              deviceName: 'B',
+              connectionStatus: 1),
+          PortDevice(
+              portId: 'p27',
+              portNumber: 27,
+              deviceName: 'C',
+              connectionStatus: 1),
+        ],
+        ports,
+      );
+
+      // All three devices land on the actual slot (green status 1).
+      expect(positions.exploreDevices.length, 3);
+      final xs = positions.exploreDevices
+          .map((d) => d.position.dx)
+          .toList()
+        ..sort();
+
+      // The leftmost column sits well left of the chassis center;
+      // rightmost sits well right of it. Specifically, the left-right
+      // spread should exceed the chassis width (500 at this viewport).
+      expect(xs.last - xs.first, greaterThan(500),
+          reason: 'columns should span wider than the chassis');
+      // Columns should be roughly evenly spaced.
+      final step1 = xs[1] - xs[0];
+      final step2 = xs[2] - xs[1];
+      expect(step1, closeTo(step2, 1.0));
+      // Edge margin: leftmost column stays inside the viewport.
+      expect(xs.first, greaterThan(0));
+      expect(xs.last, lessThan(1500));
+    });
+
+    test('empty ports do not reserve column space', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final format = Switch28P();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+
+      // Only 2 connected devices out of 14 possible odd ports.
+      final positions = strategy.calculateDevicePositions(
+        viewportSize,
+        center,
+        [
+          PortDevice(
+              portId: 'p1', portNumber: 1, deviceName: 'A', connectionStatus: 1),
+          PortDevice(
+              portId: 'p27',
+              portNumber: 27,
+              deviceName: 'B',
+              connectionStatus: 1),
+        ],
+        ports,
+      );
+
+      expect(positions.exploreDevices.length, 2);
+      final xs = positions.exploreDevices
+          .map((d) => d.position.dx)
+          .toList()
+        ..sort();
+      // Two devices → one at the far-left margin, one at the far-right.
+      // They should span nearly the entire viewport width.
+      expect(xs.last - xs.first, greaterThan(1000));
+    });
   });
 
   group('SwitchRectangleLayoutStrategy.buildFloatingDevices', () {
