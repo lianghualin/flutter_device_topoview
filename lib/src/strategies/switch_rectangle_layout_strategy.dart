@@ -278,21 +278,23 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
       double baselineIconSize = baselineDeviceSize;
       if (dev.deviceType != 'Switch') baselineIconSize *= 0.8;
 
-      // Slot Y positions — actual device anchors close to the chassis edge
-      // with a fixed small gap; outer (baseline) sits in the outer quarter
-      // of the section so it stays near the screen edge and well clear of
-      // the actual icon (keeps the mismatch pair visually separated).
-      const double chassisGap = 15.0;
+      // Slot Y positions — actual device anchors close to the chassis edge;
+      // outer (baseline) sits in the outer quarter of the section so it
+      // stays near the screen edge and clear of the actual icon. The bottom
+      // section gap is tighter because device labels sit below the icon and
+      // already push the visual mass away from the chassis.
+      const double topChassisGap = 15.0;
+      const double bottomChassisGap = 0.0;
       double outerY;
       double actualY;
       if (isTop) {
         final double sectionH = topSectionBottom - topSectionTop;
         outerY = topSectionTop + sectionH * 0.25;
-        actualY = topSectionBottom - actualDeviceSize / 2 - chassisGap;
+        actualY = topSectionBottom - actualDeviceSize / 2 - topChassisGap;
       } else {
         final double sectionH = bottomSectionBottom - bottomSectionTop;
         outerY = bottomSectionTop + sectionH * 0.75;
-        actualY = bottomSectionTop + actualDeviceSize / 2 + chassisGap;
+        actualY = bottomSectionTop + actualDeviceSize / 2 + bottomChassisGap;
       }
       outerY = outerY.clamp(
         baselineIconSize / 2 + 10,
