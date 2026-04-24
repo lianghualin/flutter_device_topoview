@@ -1,7 +1,5 @@
 import 'dart:math' as math;
 
-// ignore: unnecessary_import
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_switch_device/flutter_switch_device.dart' hide PortStatus;
 
