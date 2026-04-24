@@ -434,7 +434,54 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
     List<DevFloat> devices,
     List<PortDevice> portDevices,
   ) {
-    throw UnimplementedError('Task 7: generateConnections');
+    final List<ConnectionLine> result = [];
+    // Set of port numbers that also have an actual (explore) device.
+    // Baseline lines for these ports must curve around the actual icon.
+    final Set<int> portsWithActual = _portNumbersWithActual(portDevices);
+
+    for (final device in devices) {
+      Port? matched;
+      try {
+        matched = ports.firstWhere(
+            (p) => p.portNumber == device.connectedPortNum);
+      } catch (_) {
+        continue;
+      }
+
+      final Offset portPoint = Offset(
+        matched.position.dx + matched.width / 2,
+        matched.position.dy + matched.height / 2,
+      );
+      final Offset deviceCenter = Offset(device.position.dx, device.position.dy);
+
+      // Inset endpoint slightly into the device for visual overlap,
+      // matching the circle strategy's 8% inset.
+      final double inset = device.size * 0.08;
+      final double dx = deviceCenter.dx - portPoint.dx;
+      final double dy = deviceCenter.dy - portPoint.dy;
+      final double dist = math.sqrt(dx * dx + dy * dy);
+      final Offset devicePoint = dist > 0
+          ? Offset(
+              deviceCenter.dx - inset * (dx / dist),
+              deviceCenter.dy - inset * (dy / dist),
+            )
+          : deviceCenter;
+
+      final bool mismatch = !isConfig &&
+          device.connectedPortNum != 0 &&
+          portsWithActual.contains(device.connectedPortNum);
+
+      result.add(ConnectionLine(
+        sourceOffset: portPoint,
+        targetOffset: devicePoint,
+        status: device.portstatus,
+        portNumber: matched.portNumber,
+        isConfig: isConfig,
+        forceCurve: mismatch,
+        curveDirection: _curveDirectionForPort(matched.portNumber, ports),
+      ));
+    }
+    return result;
   }
 
   @override
@@ -443,7 +490,80 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
     List<DevFloat> devices,
     List<PortDevice> portDevices,
   ) {
-    throw UnimplementedError('Task 7: generateExploreConnections');
+    final List<ConnectionLine> result = [];
+    for (final device in devices) {
+      Port? matched;
+      try {
+        matched = ports.firstWhere(
+            (p) => p.portNumber == device.connectedPortNum);
+      } catch (_) {
+        continue;
+      }
+
+      final Offset portPoint = Offset(
+        matched.position.dx + matched.width / 2,
+        matched.position.dy + matched.height / 2,
+      );
+      final Offset deviceCenter = Offset(device.position.dx, device.position.dy);
+
+      final int lineStatus = device.portstatus == 1 ? 1 : -1;
+      result.add(ConnectionLine(
+        sourceOffset: portPoint,
+        targetOffset: deviceCenter,
+        status: lineStatus,
+        portNumber: matched.portNumber,
+        isConfig: isConfig,
+      ));
+    }
+    return result;
+  }
+
+  /// Set of port numbers for which the original input devices list has an
+  /// actual (explore) device — either matched (status 1), probed
+  /// (status -1), or mismatch (status 0 with explore data).
+  Set<int> _portNumbersWithActual(List<PortDevice> portDevices) {
+    final Set<int> result = {};
+    for (final d in portDevices) {
+      if (d.portNumber == null) continue;
+      final bool hasExplore =
+          ((d.exploreDevName != null && d.exploreDevName!.isNotEmpty) ||
+              (d.exploreDevIp != null && d.exploreDevIp!.isNotEmpty)) &&
+              !(d.deviceName == d.exploreDevName &&
+                  d.deviceIp == d.exploreDevIp);
+      final bool baselineIsReal =
+          d.connectionStatus == 1 || d.connectionStatus == -1;
+      if (hasExplore || baselineIsReal) {
+        result.add(d.portNumber!);
+      }
+    }
+    return result;
+  }
+
+  /// +1 or -1 — picks the side the baseline curve arcs toward. The goal
+  /// is for curves to bulge *outward* (toward the viewport edge) rather
+  /// than into adjacent columns. Because `ConnectionLine.paint`
+  /// computes `perpX = -dy * 0.15 * curveDirection`, and `dy` flips sign
+  /// between the top section (target above port → dy < 0) and the bottom
+  /// section (target below port → dy > 0), the correct direction value
+  /// also flips between the two sections.
+  ///
+  /// | Section | Left-half port | Right-half port |
+  /// |---------|----------------|-----------------|
+  /// | Top (odd ports)    | -1 | +1 |
+  /// | Bottom (even ports)| +1 | -1 |
+  int _curveDirectionForPort(int? portNumber, List<Port> allPorts) {
+    if (portNumber == null) return 1;
+    final bool isOdd = portNumber.isOdd;
+    final List<Port> row =
+        isOdd ? _topRowPorts(allPorts) : _bottomRowPorts(allPorts);
+    final int index = row.indexWhere((p) => p.portNumber == portNumber);
+    if (index < 0 || row.isEmpty) return 1;
+    final bool leftHalf = index < row.length / 2;
+    if (isOdd) {
+      return leftHalf ? -1 : 1;
+    } else {
+      return leftHalf ? 1 : -1;
+    }
   }
 
   static double _packageCenterSize(SwitchFormat format, Size viewportSize) {

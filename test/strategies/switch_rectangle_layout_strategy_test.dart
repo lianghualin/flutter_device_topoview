@@ -358,4 +358,113 @@ void main() {
       expect(floats[1].connectedPortNum, 3);
     });
   });
+
+  group('SwitchRectangleLayoutStrategy.generateConnections', () {
+    test('green-only port produces one straight green explore line', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final format = Switch28P();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+      final positions = strategy.calculateDevicePositions(
+        viewportSize,
+        center,
+        [
+          PortDevice(
+            portId: 'p1',
+            portNumber: 1,
+            deviceName: 'Dev1',
+            deviceIp: '10.0.0.1',
+            exploreDevName: 'Dev1',
+            exploreDevIp: '10.0.0.1',
+            connectionStatus: 1,
+          ),
+        ],
+        ports,
+      );
+      final floats = strategy.buildFloatingDevices(positions, const []);
+      final baseline = floats.take(positions.baselineDevices.length).toList();
+      final explore = floats.skip(positions.baselineDevices.length).toList();
+
+      final baseLines = strategy.generateConnections(ports, baseline, const []);
+      final exploreLines =
+          strategy.generateExploreConnections(ports, explore, const []);
+
+      expect(baseLines, isEmpty);
+      expect(exploreLines.length, 1);
+      expect(exploreLines.first.status, 1);
+      expect(exploreLines.first.forceCurve, isFalse);
+      expect(exploreLines.first.isConfig, isFalse);
+    });
+
+    test('mismatch port: baseline line is curved black (status 0); explore is straight red', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final format = Switch28P();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+      final positions = strategy.calculateDevicePositions(
+        viewportSize,
+        center,
+        [
+          PortDevice(
+            portId: 'p5',
+            portNumber: 5,
+            deviceName: 'BaseDev5',
+            deviceIp: '10.0.0.5',
+            exploreDevName: 'DiscoveredDev5',
+            exploreDevIp: '192.168.0.5',
+            connectionStatus: 0,
+          ),
+        ],
+        ports,
+      );
+      final floats = strategy.buildFloatingDevices(positions, const []);
+      final baseline = floats.take(positions.baselineDevices.length).toList();
+      final explore = floats.skip(positions.baselineDevices.length).toList();
+
+      final baseLines = strategy.generateConnections(
+          ports, baseline, [positions.baselineDevices.first.device]);
+      final exploreLines =
+          strategy.generateExploreConnections(ports, explore, const []);
+
+      expect(baseLines.length, 1);
+      expect(baseLines.first.status, 0);
+      expect(baseLines.first.forceCurve, isTrue,
+          reason: 'baseline must arc around the actual icon in mismatch');
+      expect(exploreLines.length, 1);
+      expect(exploreLines.first.status, -1,
+          reason: 'explore-mismatch is always status -1');
+      expect(exploreLines.first.forceCurve, isFalse);
+    });
+
+    test('isConfig mode: baseline lines are straight, flagged isConfig', () {
+      final strategy = SwitchRectangleLayoutStrategy(isConfig: true);
+      final format = Switch28P();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+      final positions = strategy.calculateDevicePositions(
+        viewportSize,
+        center,
+        [
+          PortDevice(
+            portId: 'p3',
+            portNumber: 3,
+            deviceName: 'Dev3',
+            connectionStatus: 0,
+          ),
+        ],
+        ports,
+      );
+      final floats = strategy.buildFloatingDevices(positions, const []);
+      final baseline = floats.take(positions.baselineDevices.length).toList();
+
+      final baseLines = strategy.generateConnections(ports, baseline, const []);
+
+      expect(baseLines.length, 1);
+      expect(baseLines.first.isConfig, isTrue);
+      expect(baseLines.first.forceCurve, isFalse);
+    });
+  });
 }
