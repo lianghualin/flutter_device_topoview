@@ -83,4 +83,45 @@ void main() {
       );
     });
   });
+
+  group('SwitchRectangleLayoutStrategy column grid', () {
+    test('splits ports into top (odd) and bottom (even) rows', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final format = Switch28P();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+
+      final topRow = strategy.debugTopRowPorts(ports);
+      final bottomRow = strategy.debugBottomRowPorts(ports);
+
+      expect(topRow.length, 14);
+      expect(bottomRow.length, 14);
+      expect(topRow.every((p) => (p.portNumber ?? 0).isOdd), isTrue);
+      expect(bottomRow.every((p) => (p.portNumber ?? 0).isEven), isTrue);
+    });
+
+    test('evenly distributes column X positions across the port range', () {
+      final strategy = SwitchRectangleLayoutStrategy();
+      final format = Switch28P();
+      final viewportSize = const Size(1500, 1000);
+      final center = strategy.calculateCenterLayout(viewportSize, format);
+      final ports = strategy.calculatePortPositions(center, format, {});
+      final topRow = strategy.debugTopRowPorts(ports);
+
+      final columnXs = strategy.debugColumnXs(topRow);
+
+      expect(columnXs.length, topRow.length);
+      // Evenly spaced: successive differences are all equal.
+      final step = columnXs[1] - columnXs[0];
+      for (int i = 1; i < columnXs.length; i++) {
+        expect(columnXs[i] - columnXs[i - 1], closeTo(step, 0.01));
+      }
+      // First column sits at the leftmost port X; last at the rightmost.
+      final firstPortX = topRow.first.position.dx + topRow.first.width / 2;
+      final lastPortX = topRow.last.position.dx + topRow.last.width / 2;
+      expect(columnXs.first, closeTo(firstPortX, 0.01));
+      expect(columnXs.last, closeTo(lastPortX, 0.01));
+    });
+  });
 }

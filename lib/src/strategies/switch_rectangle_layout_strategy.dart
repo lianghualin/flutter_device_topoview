@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+// ignore: unnecessary_import
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_switch_device/flutter_switch_device.dart' hide PortStatus;
 
@@ -201,4 +203,44 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
         return null;
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // Column-grid helpers (internal, exposed for testing via `debug*` shims)
+  // ---------------------------------------------------------------------------
+
+  List<Port> _topRowPorts(List<Port> ports) => ports
+      .where((p) => p.portNumber != null && p.portNumber!.isOdd)
+      .toList()
+    ..sort((a, b) => a.position.dx.compareTo(b.position.dx));
+
+  List<Port> _bottomRowPorts(List<Port> ports) => ports
+      .where((p) => p.portNumber != null && p.portNumber!.isEven)
+      .toList()
+    ..sort((a, b) => a.position.dx.compareTo(b.position.dx));
+
+  /// Returns column center-X positions, evenly distributed from the leftmost
+  /// to the rightmost port in [rowPorts]. `rowPorts` must be sorted by X.
+  List<double> _columnXs(List<Port> rowPorts) {
+    if (rowPorts.isEmpty) return const [];
+    if (rowPorts.length == 1) {
+      return [rowPorts.first.position.dx + rowPorts.first.width / 2];
+    }
+    final double first = rowPorts.first.position.dx + rowPorts.first.width / 2;
+    final double last = rowPorts.last.position.dx + rowPorts.last.width / 2;
+    final double step = (last - first) / (rowPorts.length - 1);
+    return List<double>.generate(
+      rowPorts.length,
+      (i) => first + step * i,
+    );
+  }
+
+  // --- @visibleForTesting shims --------------------------------------------
+  @visibleForTesting
+  List<Port> debugTopRowPorts(List<Port> ports) => _topRowPorts(ports);
+
+  @visibleForTesting
+  List<Port> debugBottomRowPorts(List<Port> ports) => _bottomRowPorts(ports);
+
+  @visibleForTesting
+  List<double> debugColumnXs(List<Port> rowPorts) => _columnXs(rowPorts);
 }
