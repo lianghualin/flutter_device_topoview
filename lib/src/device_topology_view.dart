@@ -40,6 +40,7 @@ class DeviceTopologyView extends StatefulWidget {
     this.showOuterRing = true,
     this.labelBottomPadding = 40.0,
     this.switchLayoutMode = SwitchLayoutMode.circle,
+    this.fit,
     super.key,
   });
 
@@ -64,6 +65,14 @@ class DeviceTopologyView extends StatefulWidget {
   /// Layout mode for switch topology views. Ignored for host/agent.
   /// Defaults to [SwitchLayoutMode.circle] for backwards compatibility.
   final SwitchLayoutMode switchLayoutMode;
+
+  /// If non-null, the rendered topology is wrapped in a [FittedBox] using this
+  /// [BoxFit] so it scales to the actual viewport. Use [BoxFit.scaleDown] to
+  /// only shrink when the viewport is smaller than the layout's minimum size,
+  /// or [BoxFit.contain] to always fit. When null (the default), the layout
+  /// keeps its current behavior and may overflow viewports smaller than the
+  /// strategy's minimum size.
+  final BoxFit? fit;
 
   @override
   State<DeviceTopologyView> createState() => _DeviceTopologyViewState();
@@ -671,7 +680,7 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
         child: Listener(
           onPointerSignal: (event) =>
               handlePointerSignal(event, _contentWidth, _contentHeight),
-          child: Transform(
+          child: _maybeFit(Transform(
             transform: transformMatrix,
             alignment: Alignment.center,
             child: SizedBox(
@@ -837,9 +846,23 @@ class _DeviceTopologyViewState extends State<DeviceTopologyView>
                 ],
               ),
             ),
-          ),
+          )),
         ),
       ),
+      ),
+    );
+  }
+
+  Widget _maybeFit(Widget child) {
+    final fit = widget.fit;
+    if (fit == null) return child;
+    return FittedBox(
+      fit: fit,
+      alignment: Alignment.center,
+      child: SizedBox(
+        width: _contentWidth,
+        height: _contentHeight,
+        child: child,
       ),
     );
   }

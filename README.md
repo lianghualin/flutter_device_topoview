@@ -22,7 +22,7 @@ A Flutter widget for visualizing device-centric network topologies with interact
 
 ```yaml
 dependencies:
-  device_topology_view: ^1.4.0
+  device_topology_view: ^1.5.0
 ```
 
 ## Quick Start
@@ -80,6 +80,30 @@ All other parameters — `isConfig`, `onDeviceSelected`, `initialStackedSwitchPa
 **When to use rectangle mode:** dense topologies where seeing each port's connection as a clear vertical column (rather than an angular ring spoke) is easier to read, or when the viewport is wider than it is tall so the ring layout pushes icons off-screen.
 
 **Stacked switches:** in rectangle mode, only the selected part's chassis is visible. Use `initialStackedSwitchPart` / `onStackedSwitchPartChanged` as you would in circle mode; the inactive half is hidden automatically.
+
+#### Scale-to-fit (`fit`)
+
+Switch layouts have a hard-coded minimum size (1500×800). By default, when the host viewport is smaller than that minimum the diagram still renders at the minimum and overflows. Pass a `BoxFit` to opt into scale-to-fit:
+
+```dart
+LayoutBuilder(
+  builder: (context, constraints) => DeviceTopologyView(
+    size: Size(constraints.maxWidth, constraints.maxHeight),
+    deviceType: DeviceType.switch_,
+    format: Switch24P(),
+    portDevices: portDevices,
+    portStatusMap: portStatusMap,
+    centerLabel: 'Core-Switch',
+    fit: BoxFit.scaleDown, // shrink to fit when the viewport is smaller than 1500×800
+  ),
+)
+```
+
+- `BoxFit.scaleDown` — only shrink, never enlarge (recommended for dashboards, drawers, and split views).
+- `BoxFit.contain` — always fit, scaling up if the viewport is larger than the layout minimum.
+- `null` (default) — original behavior; the diagram renders at its strategy minimum and may overflow.
+
+Pan/zoom interactions still work when `fit` is enabled. The user-driven zoom operates on top of the fit scale, so wheel-zoom remains relative to what's on screen.
 
 ### Host
 
@@ -157,6 +181,7 @@ enum DeviceType { host, agent, switch_ }
 | `showOuterRing` | `bool` | `true` | Show baseline (outer ring) connections |
 | `labelBottomPadding` | `double` | `40.0` | Extra bottom margin to prevent device labels from being clipped |
 | `switchLayoutMode` | `SwitchLayoutMode` | `SwitchLayoutMode.circle` | Switch-only: `.circle` (two rings) or `.rectangle` (column sections above/below the chassis). Ignored for host/agent. |
+| `fit` | `BoxFit?` | `null` | If non-null, wraps the topology in a `FittedBox` so it scales to the actual viewport. Use `BoxFit.scaleDown` to shrink only when smaller than the strategy minimum (recommended), or `BoxFit.contain` to always fit. |
 
 ## Dependencies
 

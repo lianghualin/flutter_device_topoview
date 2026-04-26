@@ -1,3 +1,14 @@
+## 1.5.0
+
+### New Features
+- **Scale-to-fit (`fit` parameter)**: New optional `BoxFit? fit` on `DeviceTopologyView` that wraps the rendered topology in a `FittedBox` so it scales to the actual viewport. Use `BoxFit.scaleDown` to only shrink when the viewport is smaller than the layout strategy's minimum size (1500×800 for switch layouts), or `BoxFit.contain` to always fit. When omitted (the default), behavior is unchanged — the diagram still renders at its strategy minimum and may overflow smaller viewports, preserving backwards compatibility.
+
+### New API
+- `DeviceTopologyView.fit` parameter (defaults to `null`).
+
+### Notes
+- Pan/zoom interactions remain available when `fit` is enabled. The user-driven `Transform` (scroll-wheel zoom, drag-to-pan) operates inside the `FittedBox`, so wheel zoom continues to scale relative to the on-screen content. Drag deltas are still measured in logical pixels, so panning while the content is fitted-down can feel slightly faster than 1:1 — acceptable for the opt-in fit mode.
+
 ## 1.4.0
 
 ### New Features
