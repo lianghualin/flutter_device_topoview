@@ -22,7 +22,12 @@ class PortDevice {
   /// Baseline device display name
   final String deviceName;
 
-  /// Device type string: 'Switch', 'Host', 'Agent', 'Unknown'
+  /// Device type string: 'Switch', 'Host', 'Agent', 'Unknown', 'SwitchUnknown'.
+  ///
+  /// 'SwitchUnknown' renders the switch-shaped unknown icon — use it for a port
+  /// that likely cascades an undeclared downstream switch (e.g. learned >=2 MACs
+  /// with no baseline switch), as opposed to 'Unknown' which reads as a failed
+  /// host probe.
   final String deviceType;
 
   /// Device IP address (baseline)

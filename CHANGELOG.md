@@ -1,3 +1,11 @@
+## 1.6.0
+
+### New Features
+- **Switch-unknown device float**: A `PortDevice` with `deviceType: 'SwitchUnknown'` now renders the switch-shaped unknown icon (`TopoDeviceType.switchUnknown` from `topology_view_icons`) instead of falling through to the host-shaped "?" `Unknown` float. Use it for a port that likely cascades an undeclared downstream switch (e.g. a port that learned ≥2 MACs with no baseline switch), so it no longer reads as a failed host probe. Supported in both `SwitchLayoutMode.circle` and `SwitchLayoutMode.rectangle`. Any unrecognized `deviceType` still falls back to the `Unknown` float, so existing callers are unaffected.
+
+### Notes
+- The example app's switch view now includes a `SwitchUnknown` port so the new icon is visible out of the box.
+
 ## 1.5.0
 
 ### New Features
