@@ -4,7 +4,14 @@ import 'package:device_topology_view/device_topology_view.dart';
 
 final _random = Random();
 
-const _deviceTypes = ['Switch', 'Host', 'MMI', 'Agent', 'Unknown'];
+const _deviceTypes = [
+  'Switch',
+  'Host',
+  'MMI',
+  'Agent',
+  'Unknown',
+  'SwitchUnknown',
+];
 
 Map<String, PortStatus> randomizePortStatuses(Map<String, PortStatus> original) {
   const values = PortStatus.values;

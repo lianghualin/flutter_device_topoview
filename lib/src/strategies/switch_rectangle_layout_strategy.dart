@@ -13,6 +13,7 @@ import '../widgets/floating_devices/dev_float.dart';
 import '../widgets/floating_devices/host_dev_float.dart';
 import '../widgets/floating_devices/switch_dev_float.dart';
 import '../widgets/floating_devices/unknown_dev_float.dart';
+import '../widgets/floating_devices/switch_unknown_dev_float.dart';
 import 'device_layout_strategy.dart';
 
 /// Layout strategy for switch topology views in rectangle mode.
@@ -395,6 +396,18 @@ class SwitchRectangleLayoutStrategy extends DeviceLayoutStrategy {
     switch (dev.deviceType) {
       case 'Switch':
         return SwitchDevFloat(
+          portstatus: dev.connectionStatus,
+          position: pd.position,
+          label: label,
+          size: pd.size,
+          connectedPortNum: portNum,
+          deviceStatus: isConfig ? true : dev.deviceStatus,
+          inboundUtilization: inboundUtilization,
+          outboundUtilization: outboundUtilization,
+          isRealDevice: isReal,
+        );
+      case 'SwitchUnknown':
+        return SwitchUnknownDevFloat(
           portstatus: dev.connectionStatus,
           position: pd.position,
           label: label,
